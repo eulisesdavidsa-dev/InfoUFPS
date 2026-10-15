@@ -1,4 +1,4 @@
-package org.infoUFPS.Exception;
+package org.infoUFPS.Exceptions;
 
 public class DomainException extends RuntimeException {
 
