@@ -3,7 +3,6 @@ package org.infoUFPS.Persistence.Repositories;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.infoUFPS.Entities.Content;
 import org.infoUFPS.Repositories.IContentRepository;
@@ -28,7 +27,8 @@ import java.util.Set;
 public class ContentRepositoryJpa implements IContentRepository {
 
     /** Contexto de persistencia inyectado por el contenedor de Jakarta EE. */
-    private EntityManager entityManager;
+    @Inject
+    EntityManager entityManager;
 
     /**
      * Persiste o actualiza una tarjeta de contenido en la base de datos.
