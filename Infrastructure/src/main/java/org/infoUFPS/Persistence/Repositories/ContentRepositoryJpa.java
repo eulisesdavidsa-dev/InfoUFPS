@@ -28,7 +28,6 @@ import java.util.Set;
 public class ContentRepositoryJpa implements IContentRepository {
 
     /** Contexto de persistencia inyectado por el contenedor de Jakarta EE. */
-    @Inject
     private EntityManager entityManager;
 
     /**
