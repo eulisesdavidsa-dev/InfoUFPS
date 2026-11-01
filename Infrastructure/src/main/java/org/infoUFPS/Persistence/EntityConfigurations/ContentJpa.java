@@ -13,7 +13,9 @@ import java.util.Set;
  * y setters mutables para cumplir con la especificación de Jakarta Persistence.
  */
 @Entity
-@Table(name = "contents")
+@Table(name = "contents", indexes = {
+        @Index(name = "idx_contents_status", columnList = "status")
+})
 public class ContentJpa {
 
     /** Identificador primario de la tabla (UUID de 36 caracteres en formato String). */

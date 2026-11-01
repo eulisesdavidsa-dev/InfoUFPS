@@ -78,7 +78,10 @@ public class ContentRepositoryJpa implements IContentRepository {
     @Override
     public List<Content> findByStatus(Status status) {
         return entityManager.createQuery(
-                        "SELECT cj FROM ContentJpa cj WHERE cj.status = :status ORDER BY cj.title ASC",
+                        "SELECT DISTINCT cj FROM ContentJpa cj " +
+                                "LEFT JOIN FETCH cj.tags " +
+                                "WHERE cj.status = :status " +
+                                "ORDER BY cj.title ASC",
                         ContentJpa.class)
                 .setParameter("status", status)
                 .getResultList()
