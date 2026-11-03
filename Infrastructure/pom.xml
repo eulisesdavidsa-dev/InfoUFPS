@@ -23,7 +23,7 @@
     <dependencies>
         <dependency>
             <groupId>org.infoUFPS</groupId>
-            <artifactId>Application</artifactId>
+            <artifactId>Domain</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -33,10 +33,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

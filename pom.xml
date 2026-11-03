@@ -16,6 +16,7 @@
         <module>Domain</module>
         <module>Application</module>
         <module>Infrastructure</module>
+        <module>Api</module>
         <module>Bootstrap</module>
     </modules>
 
