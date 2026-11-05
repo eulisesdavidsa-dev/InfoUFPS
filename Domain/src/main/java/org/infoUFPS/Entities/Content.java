@@ -1,5 +1,7 @@
 package org.infoUFPS.Entities;
 
+import org.infoUFPS.Enums.ModuleType;
+import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.ValueObjects.ContentId;
 import org.infoUFPS.ValueObjects.InteractionStats;
@@ -43,6 +45,8 @@ public class Content {
     /** Estado del ciclo de vida interno que controla si la tarjeta es visible públicamente o está en moderación. */
     private Status status;
 
+    private ModuleType moduleType;
+
     /**
      * Constructor privado accesible solo a través de los métodos de fábrica estáticos (of/create).
      * Garantiza la creación de una vista previa de contenido consistente y válida.
@@ -67,13 +71,15 @@ public class Content {
                     Set<String> tags,
                     String targetUrl,
                     InteractionStats stats,
-                    Status status) {
+                    Status status,
+                    ModuleType moduleType) {
         this.id = Objects.requireNonNull(id, "id es obligatorio");
         this.title = Objects.requireNonNull(title, "Titulo es obligatorio");
         this.subtitle = subtitle;
         this.description = description;
         this.imageUrl = imageUrl;
         this.categoryTag = categoryTag;
+        this.moduleType = Objects.requireNonNull(moduleType, "Modulo es obligatorio");
         this.tags = tags != null ? new LinkedHashSet<>(tags) : new LinkedHashSet<>();
         this.targetUrl = Objects.requireNonNull(targetUrl, "La ruta de destino (targetUrl) es obligatoria");
         this.stats = stats != null ? stats : InteractionStats.empty();
@@ -87,10 +93,10 @@ public class Content {
      */
     public static Content of(ContentId id, String title, String subtitle, String description,
                              String imageUrl, String categoryTag, Set<String> tags,
-                             String targetUrl, InteractionStats stats, Status status) {
+                             String targetUrl, InteractionStats stats, Status status, ModuleType moduleType) {
         return new Content(
                 id, title, subtitle, description, imageUrl,
-                categoryTag, tags, targetUrl, stats, status
+                categoryTag, tags, targetUrl, stats, status, moduleType
         );
     }
 
@@ -102,11 +108,11 @@ public class Content {
      */
     public static Content create(String title, String subtitle, String description,
                                  String imageUrl, String categoryTag, Set<String> tags,
-                                 String targetUrl, InteractionStats stats, Status status) {
+                                 String targetUrl, InteractionStats stats, Status status, ModuleType moduleType) {
         return new Content(
                 ContentId.generate(),
                 title, subtitle, description, imageUrl,
-                categoryTag, tags, targetUrl, stats, status
+                categoryTag, tags, targetUrl, stats, status, moduleType
         );
     }
 
@@ -152,5 +158,5 @@ public class Content {
     public String getTargetUrl() { return targetUrl; }
     public InteractionStats getStats() { return stats; }
     public Status getStatus() { return status; }
-
+    public ModuleType getModuleType() {return moduleType;}
 }

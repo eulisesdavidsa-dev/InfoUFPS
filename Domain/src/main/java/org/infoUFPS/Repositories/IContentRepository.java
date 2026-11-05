@@ -1,7 +1,8 @@
 package org.infoUFPS.Repositories;
 
 import org.infoUFPS.Entities.Content;
-import org.infoUFPS.Entities.Status;
+import org.infoUFPS.Enums.ModuleType;
+import org.infoUFPS.Enums.Status;
 import org.infoUFPS.ValueObjects.ContentId;
 
 import java.util.List;
@@ -46,6 +47,16 @@ public interface IContentRepository {
      * @return Lista de contenidos que coinciden con el estado especificado.
      */
     List<Content> findByStatus(Status status);
+
+    /**
+     * Obtiene una lista de contenidos filtrados por su tipo de modulo.
+     * Utilizado principalmente para paneles de administración y moderación.
+     *
+     * @param moduleType El modulo por el cual filtrar.
+     * @return Lista de contenidos que coinciden con el modulo especificado.
+     */
+    List<Content> findPublishedByModuleType(ModuleType moduleType);
+
 
     /**
      * Elimina físicamente un contenido de la base de datos a partir de su ID.

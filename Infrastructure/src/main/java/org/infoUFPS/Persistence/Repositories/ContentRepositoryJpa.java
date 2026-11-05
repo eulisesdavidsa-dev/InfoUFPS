@@ -5,9 +5,10 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.infoUFPS.Entities.Content;
+import org.infoUFPS.Enums.ModuleType;
 import org.infoUFPS.Repositories.IContentRepository;
 import org.infoUFPS.ValueObjects.InteractionStats;
-import org.infoUFPS.Entities.Status;
+import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Persistence.EntityConfigurations.ContentJpa;
 import org.infoUFPS.Persistence.EntityConfigurations.InteractionStatsJpa;
 import org.infoUFPS.ValueObjects.ContentId;
@@ -84,6 +85,22 @@ public class ContentRepositoryJpa implements IContentRepository {
                                 "ORDER BY cj.title ASC",
                         ContentJpa.class)
                 .setParameter("status", status)
+                .getResultList()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Content> findPublishedByModuleType(ModuleType moduleType) {
+        return entityManager.createQuery(
+                        "SELECT DISTINCT cj FROM ContentJpa cj " +
+                                "LEFT JOIN FETCH cj.tags " +
+                                "WHERE cj.moduleType = :moduleType AND cj.status = :status " +
+                                "ORDER BY cj.title ASC",
+                        ContentJpa.class)
+                .setParameter("moduleType", moduleType)
+                .setParameter("status", Status.PUBLISHED)
                 .getResultList()
                 .stream()
                 .map(this::toDomain)
@@ -182,7 +199,8 @@ public class ContentRepositoryJpa implements IContentRepository {
                 tags,
                 e.getTargetUrl(),
                 stats,
-                e.getStatus()
+                e.getStatus(),
+                e.getModuleType()
         );
     }
 }

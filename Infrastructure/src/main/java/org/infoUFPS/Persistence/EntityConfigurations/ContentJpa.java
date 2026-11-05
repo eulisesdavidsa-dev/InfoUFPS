@@ -1,7 +1,8 @@
 package org.infoUFPS.Persistence.EntityConfigurations;
 
 import jakarta.persistence.*;
-import org.infoUFPS.Entities.Status;
+import org.infoUFPS.Enums.ModuleType;
+import org.infoUFPS.Enums.Status;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -74,6 +75,10 @@ public class ContentJpa {
     @Column(name = "status", length = 30, nullable = false)
     private Status status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "module_type", length = 50, nullable = false)
+    private ModuleType moduleType;
+
     /**
      * Constructor sin argumentos requerido obligatoriamente por la especificación de JPA/Hibernate.
      */
@@ -112,4 +117,7 @@ public class ContentJpa {
 
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+
+    public ModuleType getModuleType() {return moduleType;}
+    public void setModuleType(ModuleType moduleType) {this.moduleType = moduleType;}
 }

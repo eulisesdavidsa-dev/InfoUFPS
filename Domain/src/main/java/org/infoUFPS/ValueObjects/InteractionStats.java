@@ -2,6 +2,8 @@ package org.infoUFPS.ValueObjects;
 
 import org.infoUFPS.Exceptions.DomainException;
 
+import java.util.Objects;
+
 /**
  * Objeto de Valor (Value Object) inmutable que encapsula las métricas de interacción
  * (número de me gusta y comentarios) asociadas a la vista previa de un contenido.
@@ -63,6 +65,18 @@ public final class InteractionStats {
      */
     public InteractionStats incrementarComentarios() {
         return new InteractionStats(this.likesCount, this.commentsCount + 1);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof InteractionStats that)) return false;
+        return likesCount == that.likesCount && commentsCount == that.commentsCount;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(likesCount, commentsCount);
     }
 
     // ── Getters para la vista ─────────────────────────────────────────
