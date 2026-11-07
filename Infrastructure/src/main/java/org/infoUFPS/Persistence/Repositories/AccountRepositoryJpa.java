@@ -3,6 +3,7 @@ package org.infoUFPS.Persistence.Repositories;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import org.infoUFPS.Entities.Account;
 import org.infoUFPS.Persistence.EntityConfigurations.AccountJpa;
 import org.infoUFPS.Repositories.IAccountRepository;
@@ -17,6 +18,8 @@ public class AccountRepositoryJpa implements IAccountRepository {
     @PersistenceContext
     private EntityManager entityManager;
 
+    @Override
+    @Transactional
     public Account save(Account account) {
         // Guardar o actualizar la cuenta principal
         AccountJpa accountJpa = toEntity(account);
@@ -62,6 +65,7 @@ public class AccountRepositoryJpa implements IAccountRepository {
     }
 
     @Override
+    @Transactional
     public void deleteById(AccountId id){
         entityManager.createQuery(
                         "DELETE FROM AccountJpa cj WHERE cj.accountId = :id")
@@ -74,6 +78,7 @@ public class AccountRepositoryJpa implements IAccountRepository {
     private AccountJpa toEntity(Account account) {
         AccountJpa entity = new AccountJpa();
         entity.setAccountId(account.getAccountId().value());
+        entity.setName(account.getName());
         entity.setEmail(account.getEmail());
         entity.setPasswordHash(account.getPasswordHash());
         entity.setCreatedAt(account.getCreatedAt());
