@@ -1,6 +1,6 @@
 package org.infoUFPS.Features.Calendar.Support;
 
-import org.infoUFPS.Criteria.EventRangeCriteria;
+import org.infoUFPS.Criterias.EventRangeCriteria;
 import org.infoUFPS.Enums.EventType;
 import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Exceptions.DomainException;

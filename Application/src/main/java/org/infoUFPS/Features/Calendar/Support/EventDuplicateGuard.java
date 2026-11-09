@@ -2,7 +2,7 @@ package org.infoUFPS.Features.Calendar.Support;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.infoUFPS.Criteria.EventDuplicateCriteria;
+import org.infoUFPS.Criterias.EventDuplicateCriteria;
 import org.infoUFPS.Entities.Event;
 import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Exceptions.ConflictException;

@@ -1,4 +1,4 @@
-package org.infoUFPS.Criteria;
+package org.infoUFPS.Criterias;
 
 import org.infoUFPS.Enums.EventType;
 import org.infoUFPS.Exceptions.DomainException;

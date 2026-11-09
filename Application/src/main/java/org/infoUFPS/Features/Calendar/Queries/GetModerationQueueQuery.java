@@ -2,7 +2,7 @@ package org.infoUFPS.Features.Calendar.Queries;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.infoUFPS.Criteria.ModerationCriteria;
+import org.infoUFPS.Criterias.ModerationCriteria;
 import org.infoUFPS.DTOs.EventDto;
 import org.infoUFPS.DTOs.ModerationEventDto;
 import org.infoUFPS.Enums.Status;

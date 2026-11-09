@@ -1,4 +1,4 @@
-package org.infoUFPS.Criteria;
+package org.infoUFPS.Criterias;
 
 import org.infoUFPS.Enums.Status;
 import org.infoUFPS.ValueObjects.PageRequest;

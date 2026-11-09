@@ -1,9 +1,9 @@
 package org.infoUFPS.Repositories;
 
-import org.infoUFPS.Criteria.EventDuplicateCriteria;
-import org.infoUFPS.Criteria.EventPageCriteria;
-import org.infoUFPS.Criteria.EventRangeCriteria;
-import org.infoUFPS.Criteria.ModerationCriteria;
+import org.infoUFPS.Criterias.EventDuplicateCriteria;
+import org.infoUFPS.Criterias.EventPageCriteria;
+import org.infoUFPS.Criterias.EventRangeCriteria;
+import org.infoUFPS.Criterias.ModerationCriteria;
 import org.infoUFPS.Entities.Event;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.EventId;

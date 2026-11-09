@@ -2,7 +2,7 @@ package org.infoUFPS.Features.Calendar.Queries;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.infoUFPS.Criteria.EventRangeCriteria;
+import org.infoUFPS.Criterias.EventRangeCriteria;
 import org.infoUFPS.DTOs.EventDaySummaryDto;
 import org.infoUFPS.Entities.Event;
 import org.infoUFPS.Features.Calendar.Support.EventQueryValidator;
