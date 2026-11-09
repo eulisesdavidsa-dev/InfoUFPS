@@ -1,0 +1,243 @@
+package org.infoUFPS.Persistence.Repositories;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.*;
+import jakarta.transaction.Transactional;
+import org.infoUFPS.Criterias.MateriaSearchCriteria;
+import org.infoUFPS.Entities.Materia;
+import org.infoUFPS.Enums.EstadoModeracion;
+import org.infoUFPS.Pagination.PageRequest;
+import org.infoUFPS.Pagination.PageResult;
+import org.infoUFPS.Persistence.EntityConfigurations.MateriaJpa;
+import org.infoUFPS.Repositories.IMateriaRepository;
+import org.infoUFPS.Utils.TextNormalizer;
+import org.infoUFPS.ValueObjects.AccountId;
+import org.infoUFPS.ValueObjects.MateriaId;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+
+@ApplicationScoped
+public class MateriaRepositoryJpa implements IMateriaRepository {
+
+    @Inject
+    EntityManager entityManager;
+
+    @Override
+    @Transactional
+    public Materia save(Materia materia) {
+        MateriaJpa entity = toEntity(materia);
+        entityManager.merge(entity);
+        return materia;
+    }
+
+    @Override
+    public Optional<Materia> findById(MateriaId id) {
+        MateriaJpa entity = entityManager.find(MateriaJpa.class, id.value());
+        return Optional.ofNullable(entity).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Materia> findByCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            return Optional.empty();
+        }
+        return entityManager.createQuery(
+                        "SELECT m FROM MateriaJpa m WHERE UPPER(m.codigo) = :code", MateriaJpa.class)
+                .setParameter("code", codigo.trim().toUpperCase())
+                .getResultList()
+                .stream()
+                .findFirst()
+                .map(this::toDomain);
+    }
+
+    @Override
+    public PageResult<Materia> search(MateriaSearchCriteria criteria, PageRequest pageRequest) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // 1. Count
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<MateriaJpa> countRoot = countQuery.from(MateriaJpa.class);
+        List<Predicate> countPredicates = buildPredicates(cb, countRoot, criteria);
+        countQuery.select(cb.count(countRoot)).where(countPredicates.toArray(new Predicate[0]));
+        Long totalElements = entityManager.createQuery(countQuery).getSingleResult();
+
+        if (totalElements == 0) {
+            return PageResult.empty(pageRequest.page(), pageRequest.size());
+        }
+
+        // 2. Select
+        CriteriaQuery<MateriaJpa> selectQuery = cb.createQuery(MateriaJpa.class);
+        Root<MateriaJpa> root = selectQuery.from(MateriaJpa.class);
+        List<Predicate> predicates = buildPredicates(cb, root, criteria);
+
+        selectQuery.where(predicates.toArray(new Predicate[0]))
+                .orderBy(cb.asc(root.get("nombre")));
+
+        TypedQuery<MateriaJpa> query = entityManager.createQuery(selectQuery);
+        query.setFirstResult(pageRequest.getOffset());
+        query.setMaxResults(pageRequest.size());
+
+        List<Materia> items = query.getResultList().stream().map(this::toDomain).toList();
+
+        return PageResult.of(items, pageRequest.page(), pageRequest.size(), totalElements);
+    }
+
+    private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<MateriaJpa> root, MateriaSearchCriteria criteria) {
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (criteria.estado() != null) {
+            predicates.add(cb.equal(root.get("estado"), criteria.estado()));
+        }
+
+        if (criteria.creditos() != null) {
+            predicates.add(cb.equal(root.get("creditos"), criteria.creditos()));
+        }
+
+        if (criteria.tipo() != null) {
+            predicates.add(cb.equal(root.get("tipo"), criteria.tipo()));
+        }
+
+        if (criteria.query() != null && !criteria.query().isBlank()) {
+            String rawQuery = criteria.query().trim();
+            // Buscar por coincidencia de código (exacta o prefijo) O por todos los tokens en nombre
+            String codeCandidate = rawQuery.toUpperCase();
+            Predicate codePredicate = cb.equal(cb.upper(root.get("codigo")), codeCandidate);
+
+            List<String> tokens = TextNormalizer.tokenize(rawQuery);
+            if (!tokens.isEmpty()) {
+                List<Predicate> tokenPredicates = new ArrayList<>();
+                for (String token : tokens) {
+                    String escaped = TextNormalizer.escapeLikePattern(token);
+                    tokenPredicates.add(cb.like(root.get("nombreNormalizado"), "%" + escaped + "%", '\\'));
+                }
+                Predicate allTokensMatch = cb.and(tokenPredicates.toArray(new Predicate[0]));
+                predicates.add(cb.or(codePredicate, allTokensMatch));
+            } else {
+                predicates.add(codePredicate);
+            }
+        }
+
+        return predicates;
+    }
+
+    @Override
+    public boolean existsByCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            return false;
+        }
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(m) FROM MateriaJpa m WHERE UPPER(m.codigo) = :code", Long.class)
+                .setParameter("code", codigo.trim().toUpperCase())
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
+    @Override
+    public boolean existsByCodigoAndNotId(String codigo, MateriaId excludeId) {
+        if (codigo == null || codigo.isBlank()) {
+            return false;
+        }
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(m) FROM MateriaJpa m WHERE UPPER(m.codigo) = :code AND m.materiaId != :excludeId", Long.class)
+                .setParameter("code", codigo.trim().toUpperCase())
+                .setParameter("excludeId", excludeId.value())
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
+    @Override
+    public List<Materia> findSimilar(String nombreNormalizado) {
+        return entityManager.createQuery(
+                        "SELECT m FROM MateriaJpa m WHERE m.estado != :archived", MateriaJpa.class)
+                .setParameter("archived", EstadoModeracion.ARCHIVADO)
+                .getResultList()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Materia> findByProponenteId(AccountId proponenteId) {
+        return entityManager.createQuery(
+                        "SELECT m FROM MateriaJpa m WHERE m.proponenteId = :propId ORDER BY m.createdAt DESC",
+                        MateriaJpa.class)
+                .setParameter("propId", proponenteId.value())
+                .getResultList()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public long countTodaySubmissionsByProponente(AccountId proponenteId) {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(m) FROM MateriaJpa m WHERE m.proponenteId = :propId AND m.createdAt >= :startOfDay",
+                        Long.class)
+                .setParameter("propId", proponenteId.value())
+                .setParameter("startOfDay", startOfDay)
+                .getSingleResult();
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public List<Materia> findByIds(Collection<MateriaId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> idStrings = ids.stream().map(MateriaId::value).toList();
+        return entityManager.createQuery(
+                        "SELECT m FROM MateriaJpa m WHERE m.materiaId IN :ids ORDER BY m.nombre ASC", MateriaJpa.class)
+                .setParameter("ids", idStrings)
+                .getResultList()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteById(MateriaId id) {
+        entityManager.createQuery("DELETE FROM MateriaJpa m WHERE m.materiaId = :id")
+                .setParameter("id", id.value())
+                .executeUpdate();
+    }
+
+    // ── Mapeos ──────────────────────────────────────────────────────────
+
+    private MateriaJpa toEntity(Materia domain) {
+        MateriaJpa entity = new MateriaJpa();
+        entity.setMateriaId(domain.getId().value());
+        entity.setNombre(domain.getNombre());
+        entity.setNombreNormalizado(domain.getNombreNormalizado());
+        entity.setCodigo(domain.getCodigo());
+        entity.setCreditos(domain.getCreditos());
+        entity.setTipo(domain.getTipo());
+        entity.setEstado(domain.getEstado());
+        entity.setProponenteId(domain.getProponenteId() != null ? domain.getProponenteId().value() : null);
+        entity.setCreatedAt(domain.getCreatedAt());
+        entity.setUpdatedAt(domain.getUpdatedAt());
+        return entity;
+    }
+
+    private Materia toDomain(MateriaJpa jpa) {
+        return Materia.of(
+                MateriaId.of(jpa.getMateriaId()),
+                jpa.getNombre(),
+                jpa.getNombreNormalizado(),
+                jpa.getCodigo(),
+                jpa.getCreditos(),
+                jpa.getTipo(),
+                jpa.getEstado(),
+                jpa.getProponenteId() != null ? AccountId.of(jpa.getProponenteId()) : null,
+                jpa.getCreatedAt(),
+                jpa.getUpdatedAt()
+        );
+    }
+}
+

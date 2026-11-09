@@ -1,6 +1,7 @@
 package org.infoUFPS.Persistence.EntityConfigurations;
 
 import jakarta.persistence.*;
+import org.infoUFPS.Enums.Role;
 
 import java.time.LocalDateTime;
 
@@ -24,6 +25,10 @@ public class AccountJpa {
     @Column(name = "password_hash", length = 255, nullable = false)
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 30, nullable = false)
+    private Role role = Role.USER;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -40,6 +45,9 @@ public class AccountJpa {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

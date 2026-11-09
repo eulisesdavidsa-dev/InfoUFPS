@@ -81,6 +81,7 @@ public class AccountRepositoryJpa implements IAccountRepository {
         entity.setName(account.getName());
         entity.setEmail(account.getEmail());
         entity.setPasswordHash(account.getPasswordHash());
+        entity.setRole(account.getRole());
         entity.setCreatedAt(account.getCreatedAt());
         return entity;
     }
@@ -93,6 +94,7 @@ public class AccountRepositoryJpa implements IAccountRepository {
                 accountJpa.getName(),
                 accountJpa.getEmail(),
                 accountJpa.getPasswordHash(),
+                accountJpa.getRole(),
                 accountJpa.getCreatedAt()
         );
     }

@@ -2,6 +2,7 @@ package org.infoUFPS.Features.Comment.Commands;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.infoUFPS.DTOs.CommentDto;
 import org.infoUFPS.Entities.Comment;
 import org.infoUFPS.Entities.Content;
@@ -45,6 +46,7 @@ public class CreateCommentHandler {
      * @param command Datos de entrada para crear el comentario.
      * @return DTO con la información del comentario registrado.
      */
+    @Transactional
     public CommentDto execute(CreateCommentCommand command) {
         if (command.contentId() == null || command.contentId().isBlank()) {
             throw new DomainException("El contentId es obligatorio");
