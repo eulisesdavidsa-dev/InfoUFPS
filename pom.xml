@@ -61,5 +61,12 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <!-- Versión moderna de Surefire para ejecutar las pruebas JUnit 5 -->
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+            </plugin>
+        </plugins>
     </build>
 </project>
