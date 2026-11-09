@@ -168,6 +168,7 @@ public class ContentRepositoryJpa implements IContentRepository {
         }
 
         entity.setStatus(content.getStatus());
+        entity.setModuleType(content.getModuleType());
         return entity;
     }
 
