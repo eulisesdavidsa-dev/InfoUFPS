@@ -67,6 +67,13 @@ public final class InteractionStats {
         return new InteractionStats(this.likesCount, this.commentsCount + 1);
     }
 
+    /**
+     * Devuelve una nueva instancia de estadísticas decrementando en 1 el contador de comentarios (mínimo 0).
+     */
+    public InteractionStats decrementarComentarios() {
+        return new InteractionStats(this.likesCount, Math.max(0, this.commentsCount - 1));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -13,4 +13,5 @@ public record RegisterAccountCommand(
         if (name == null || name.isBlank())
             throw new IllegalArgumentException("El nombre es obligatorio");
     }
+    
 }

@@ -1,12 +1,15 @@
 package org.infoUFPS.Entities;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
+
 import org.infoUFPS.Enums.ModuleType;
 import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.ValueObjects.ContentId;
 import org.infoUFPS.ValueObjects.InteractionStats;
-
-import java.util.*;
 
 /**
  * Entidad de Dominio que representa la vista previa (tarjeta / card) de un contenido en el feed.
@@ -138,6 +141,20 @@ public class Content {
             throw new DomainException("No se puede archivar un contenido desde el estado actual: " + this.status);
         }
         this.status = Status.ARCHIVED;
+    }
+
+    /**
+     * Incrementa en 1 el contador de comentarios asociados a este contenido.
+     */
+    public void incrementComments() {
+        this.stats = this.stats.incrementarComentarios();
+    }
+
+    /**
+     * Decrementa en 1 el contador de comentarios asociados a este contenido.
+     */
+    public void decrementComments() {
+        this.stats = this.stats.decrementarComentarios();
     }
 
     // ── Getters ──────────────────────────────────────────────────────────
