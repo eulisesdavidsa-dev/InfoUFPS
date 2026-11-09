@@ -49,6 +49,12 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
 
+        <!-- Migraciones de base de datos -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+
         <!-- BCrypt para hashing de contraseñas -->
         <dependency>
             <groupId>org.mindrot</groupId>
