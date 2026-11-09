@@ -198,7 +198,7 @@ class ApplicationUseCasesTest {
 
         List<ModeracionWarningDto> warnings = similarityService.checkProfesorSimilarity("Roberto C. Gómez", Facultad.INGENIERIA);
         assertFalse(warnings.isEmpty(), "Debe encontrar coincidencia con similitud >= 70%");
-        assertTrue(warnings.getFirst().similitud() >= 0.70);
+        assertTrue(warnings.get(0).similitud() >= 0.70);
     }
 
     @Test

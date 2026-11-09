@@ -71,12 +71,12 @@ class SearchAndFiltersTest {
         // Buscar con palabras desordenadas y sin tildes: "gomez alvaro"
         PageResult<ProfesorListItemDto> result1 = getProfesoresPublicQuery.execute("gomez alvaro", null, PageRequest.of(1, 10));
         assertEquals(1, result1.totalElements());
-        assertEquals("Álvaro José Gómez", result1.items().getFirst().nombre());
+        assertEquals("Álvaro José Gómez", result1.items().get(0).nombre());
 
         // Buscar con mayúsculas y tildes desordenadas: "JOSÉ ÁLVARO"
         PageResult<ProfesorListItemDto> result2 = getProfesoresPublicQuery.execute("JOSÉ ÁLVARO", null, PageRequest.of(1, 10));
         assertEquals(1, result2.totalElements());
-        assertEquals("Álvaro José Gómez", result2.items().getFirst().nombre());
+        assertEquals("Álvaro José Gómez", result2.items().get(0).nombre());
 
         // Buscar "GOMEZ" debe encontrar ambos profesores
         PageResult<ProfesorListItemDto> result3 = getProfesoresPublicQuery.execute("GOMEZ", null, PageRequest.of(1, 10));
@@ -92,7 +92,7 @@ class SearchAndFiltersTest {
         // Búsqueda con '%' y '_'
         PageResult<ProfesorListItemDto> resultSpecial = getProfesoresPublicQuery.execute("100%_", null, PageRequest.of(1, 10));
         assertEquals(1, resultSpecial.totalElements());
-        assertEquals("Profesor Especial 100%_Aprobado", resultSpecial.items().getFirst().nombre());
+        assertEquals("Profesor Especial 100%_Aprobado", resultSpecial.items().get(0).nombre());
 
         // Filtro por facultad Ingeniería
         PageResult<ProfesorListItemDto> resultIng = getProfesoresPublicQuery.execute(null, Facultad.INGENIERIA, PageRequest.of(1, 10));
@@ -114,7 +114,7 @@ class SearchAndFiltersTest {
         // El listado público solo debe contener el publicado
         PageResult<ProfesorListItemDto> publicResult = getProfesoresPublicQuery.execute(null, null, PageRequest.of(1, 10));
         assertEquals(1, publicResult.totalElements());
-        assertEquals("Profesor Aprobado", publicResult.items().getFirst().nombre());
+        assertEquals("Profesor Aprobado", publicResult.items().get(0).nombre());
     }
 
     @Test
@@ -128,12 +128,12 @@ class SearchAndFiltersTest {
         // 1. Búsqueda por código exacto
         PageResult<MateriaListItemDto> byCode = getMateriasPublicQuery.execute("1150301", null, null, PageRequest.of(1, 10));
         assertEquals(1, byCode.totalElements());
-        assertEquals("Estructuras de Datos", byCode.items().getFirst().nombre());
+        assertEquals("Estructuras de Datos", byCode.items().get(0).nombre());
 
         // 2. Búsqueda por nombre desordenado: "datos estructuras"
         PageResult<MateriaListItemDto> byDisorderName = getMateriasPublicQuery.execute("datos estructuras", null, null, PageRequest.of(1, 10));
         assertEquals(1, byDisorderName.totalElements());
-        assertEquals("Estructuras de Datos", byDisorderName.items().getFirst().nombre());
+        assertEquals("Estructuras de Datos", byDisorderName.items().get(0).nombre());
 
         // 3. Filtros combinados: creditos=4 y tipo=CARRERA
         PageResult<MateriaListItemDto> combined = getMateriasPublicQuery.execute(null, 4, TipoMateria.CARRERA, PageRequest.of(1, 10));
@@ -142,7 +142,7 @@ class SearchAndFiltersTest {
         // 4. Filtros combinados: creditos=3 y tipo=ELECTIVA
         PageResult<MateriaListItemDto> combinedElectiva = getMateriasPublicQuery.execute(null, 3, TipoMateria.ELECTIVA, PageRequest.of(1, 10));
         assertEquals(1, combinedElectiva.totalElements());
-        assertEquals("Inteligencia Artificial", combinedElectiva.items().getFirst().nombre());
+        assertEquals("Inteligencia Artificial", combinedElectiva.items().get(0).nombre());
 
         // 5. Filtros combinados sin coincidencia: creditos=4 y tipo=ELECTIVA
         PageResult<MateriaListItemDto> noMatch = getMateriasPublicQuery.execute(null, 4, TipoMateria.ELECTIVA, PageRequest.of(1, 10));
