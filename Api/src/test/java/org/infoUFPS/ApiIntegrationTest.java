@@ -81,8 +81,7 @@ class ApiIntegrationTest {
     @DisplayName("Rutas administrativas devuelven 403 si el rol no es ADMIN")
     void testForbiddenForNormalUser() {
         given()
-                .header("X-User-Id", userId)
-                .header("X-User-Role", "USER")
+                .header("X-Account-Id", userId)
                 .contentType(ContentType.JSON)
                 .body("{\"nombre\":\"Docente\",\"facultad\":\"INGENIERIA\"}")
                 .when().post("/api/v1/admin/profesores")
@@ -90,12 +89,73 @@ class ApiIntegrationTest {
     }
 
     @Test
+    @DisplayName("Un valor de enum inválido responde 400 en lugar de 500")
+    void testInvalidEnumReturnsBadRequest() {        given()
+                .header("X-Account-Id", userId)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "nombre": "Docente Inválido",
+                            "facultad": "FACULTAD_INEXISTENTE"
+                        }
+                        """)
+                .when().post("/api/v1/user/profesores")
+                .then().statusCode(400)
+                .body("error", equalTo("BAD_REQUEST"));
+    }
+
+    @Test
+    @DisplayName("La validación de entrada responde 400 con el formato único")
+    void testValidationReturnsSingleErrorFormat() {
+        given()
+                .header("X-Account-Id", userId)
+                .contentType(ContentType.JSON)
+                .body("{\"nombre\":\"   \"}")
+                .when().post("/api/v1/user/profesores")
+                .then().statusCode(400)
+                .body("error", equalTo("BAD_REQUEST"))
+                .body("status", equalTo(400))
+                .body("message", notNullValue())
+                .body("timestamp", notNullValue());
+    }
+
+    @Test
+    @DisplayName("La búsqueda de cuentas por email no distingue mayúsculas")
+    void testEmailLookupIsCaseInsensitive() {
+        org.junit.jupiter.api.Assertions.assertTrue(
+                accountRepository.existsByEmail("ADMIN@UFPS.EDU.CO"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                accountRepository.findByEmail("ADMIN@UFPS.EDU.CO").isPresent());
+    }
+
+    @Test
+    @DisplayName("Las reseñas públicas de un profesor no publicado responden 404")
+    void testPublicReviewsOfUnpublishedProfesorReturnNotFound() {
+        String profesorId = given()
+                .header("X-Account-Id", userId)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                            "nombre": "Profesor En Revisión Público",
+                            "facultad": "INGENIERIA"
+                        }
+                        """)
+                .when().post("/api/v1/user/profesores")
+                .then().statusCode(201)
+                .extract().path("id");
+
+        given()
+                .when().get("/api/v1/public/profesores/%s/resenas".formatted(profesorId))
+                .then().statusCode(404)
+                .body("error", equalTo("NOT_FOUND"));
+    }
+
+    @Test
     @DisplayName("Flujo completo: Admin crea materia y profesor, usuario propone y reseña, búsqueda pública")
     void testEndToEndWorkflow() {
         // 1. Admin crea materia publicada
         String materiaId = given()
-                .header("X-User-Id", adminId)
-                .header("X-User-Role", "ADMIN")
+                .header("X-Account-Id", adminId)
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -113,8 +173,7 @@ class ApiIntegrationTest {
 
         // 2. Admin crea profesor publicado
         String profesorId = given()
-                .header("X-User-Id", adminId)
-                .header("X-User-Role", "ADMIN")
+                .header("X-Account-Id", adminId)
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -133,8 +192,7 @@ class ApiIntegrationTest {
 
         // 3. Intento de crear duplicado por admin devuelve 409 Conflict
         given()
-                .header("X-User-Id", adminId)
-                .header("X-User-Role", "ADMIN")
+                .header("X-Account-Id", adminId)
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -149,7 +207,7 @@ class ApiIntegrationTest {
 
         // 4. Usuario autenticado crea reseña para el profesor publicado
         String resenaId = given()
-                .header("X-User-Id", userId)
+                .header("X-Account-Id", userId)
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -169,7 +227,7 @@ class ApiIntegrationTest {
 
         // 5. Usuario intenta crear segunda reseña activa para el mismo profesor -> 409 Conflict
         given()
-                .header("X-User-Id", userId)
+                .header("X-Account-Id", userId)
                 .contentType(ContentType.JSON)
                 .body("""
                         {
@@ -185,7 +243,7 @@ class ApiIntegrationTest {
 
         // 6. Consultar reseñas propias (el autor ve su reseña en revisión)
         given()
-                .header("X-User-Id", userId)
+                .header("X-Account-Id", userId)
                 .when().get("/api/v1/user/resenas")
                 .then().statusCode(200)
                 .body("size()", greaterThan(0))
@@ -193,8 +251,7 @@ class ApiIntegrationTest {
 
         // 7. Admin publica la reseña a través de la cola de moderación
         given()
-                .header("X-User-Id", adminId)
-                .header("X-User-Role", "ADMIN")
+                .header("X-Account-Id", adminId)
                 .when().put("/api/v1/admin/moderacion/resenas/%s/publicar".formatted(resenaId))
                 .then().statusCode(200)
                 .body("estado", equalTo("PUBLICADO"));
@@ -207,7 +264,10 @@ class ApiIntegrationTest {
                 .body("totalElements", equalTo(1))
                 .body("items[0].nombre", equalTo("Fernando José Martínez"))
                 .body("items[0].promedioCalificacion", equalTo(5.0f))
-                .body("items[0].totalResenas", equalTo(1));
+                .body("items[0].totalResenas", equalTo(1))
+                .body("items[0]", not(hasKey("email")))
+                .body("items[0]", not(hasKey("estado")))
+                .body("items[0]", not(hasKey("proponenteId")));
 
         // 9. Detalle público del profesor
         given()
@@ -215,23 +275,48 @@ class ApiIntegrationTest {
                 .then().statusCode(200)
                 .body("id", equalTo(profesorId))
                 .body("promedioCalificacion", equalTo(5.0f))
-                .body("materias.size()", greaterThan(0));
+                .body("materias.size()", greaterThan(0))
+                .body("$", not(hasKey("email")))
+                .body("$", not(hasKey("estado")))
+                .body("$", not(hasKey("proponenteId")));
 
         // 10. Reseñas públicas del profesor
         given()
                 .when().get("/api/v1/public/profesores/%s/resenas".formatted(profesorId))
                 .then().statusCode(200)
                 .body("totalElements", equalTo(1))
-                .body("items[0].id", equalTo(resenaId));
+                .body("items[0].id", equalTo(resenaId))
+                .body("items[0].autorNombre", notNullValue())
+                .body("items[0]", not(hasKey("autorId")))
+                .body("items[0]", not(hasKey("estado")));
 
         // 11. Búsqueda global
         given()
                 .queryParam("q", "arquitectura")
                 .when().get("/api/v1/public/busqueda-global")
                 .then().statusCode(200)
-                .body("materias.size()", greaterThan(0));
+                .body("materias.size()", greaterThan(0))
+                .body("profesores[0]", not(hasKey("email")))
+                .body("profesores[0]", not(hasKey("estado")))
+                .body("materias[0]", not(hasKey("estado")))
+                .body("materias[0]", not(hasKey("proponenteId")));
 
-        // 12. Consultar recurso inexistente -> 404
+        // 12. Listado y detalle público de materias sin datos internos
+        given()
+                .queryParam("q", "arquitectura")
+                .when().get("/api/v1/public/materias")
+                .then().statusCode(200)
+                .body("items[0]", not(hasKey("estado")))
+                .body("items[0]", not(hasKey("proponenteId")));
+
+        given()
+                .when().get("/api/v1/public/materias/%s".formatted(materiaId))
+                .then().statusCode(200)
+                .body("id", equalTo(materiaId))
+                .body("$", not(hasKey("estado")))
+                .body("$", not(hasKey("proponenteId")));
+
+        // 13. Consultar recurso inexistente -> 404
         given()
                 .when().get("/api/v1/public/profesores/inexistente-uuid")
                 .then().statusCode(404)

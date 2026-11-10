@@ -11,11 +11,10 @@ public class DailyLimitExceededExceptionMapper implements ExceptionMapper<DailyL
 
     @Override
     public Response toResponse(DailyLimitExceededException exception) {
-        ErrorResponse body = ErrorResponse.of("DAILY_LIMIT_EXCEEDED", exception.getMessage(), 400);
-        return Response.status(Response.Status.BAD_REQUEST)
+        ErrorResponse body = ErrorResponse.of("DAILY_LIMIT_EXCEEDED", exception.getMessage(), 429);
+        return Response.status(Response.Status.TOO_MANY_REQUESTS)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(body)
                 .build();
     }
 }
-

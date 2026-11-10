@@ -4,6 +4,7 @@ import org.infoUFPS.Entities.Resena;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Enums.TipoDestino;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
 import org.infoUFPS.ValueObjects.ProfesorId;
@@ -73,7 +74,7 @@ class ResenaDomainTest {
         AccountId otro = AccountId.generate();
         Resena r = Resena.createForMateria(autor, MateriaId.generate(), 5, "Buena materia");
 
-        assertThrows(DomainException.class, () -> r.updateByAuthor(2, "Mala", null, otro));
+        assertThrows(ForbiddenException.class, () -> r.updateByAuthor(2, "Mala", null, otro));
     }
 }
 

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Migración V1.0.0: Módulo de Profesores, Materias y Reseñas
+-- Migración V1: Módulo académico (Profesores, Materias y Reseñas)
 -- =====================================================================
 
 -- 1. Tabla de Profesores
@@ -61,9 +61,14 @@ CREATE TABLE IF NOT EXISTS resenas (
     estado VARCHAR(30) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP,
-    CONSTRAINT fk_resena_profesor FOREIGN KEY (profesor_id) REFERENCES profesores(profesor_id) ON DELETE SET NULL,
-    CONSTRAINT fk_resena_materia FOREIGN KEY (materia_id) REFERENCES materias(materia_id) ON DELETE SET NULL
+    CONSTRAINT fk_resena_profesor FOREIGN KEY (profesor_id) REFERENCES profesores(profesor_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_resena_materia FOREIGN KEY (materia_id) REFERENCES materias(materia_id) ON DELETE RESTRICT
 );
+
+-- Un profesor publicado no puede repetir nombre normalizado dentro de la misma facultad.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_published_profesor_nombre_facultad
+    ON profesores (nombre_normalizado, facultad)
+    WHERE estado = 'PUBLICADO';
 
 -- Índices para Reseñas
 CREATE INDEX IF NOT EXISTS idx_resenas_profesor_estado ON resenas (profesor_id, estado);

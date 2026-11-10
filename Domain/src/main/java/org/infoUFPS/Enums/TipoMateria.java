@@ -1,5 +1,7 @@
 package org.infoUFPS.Enums;
 
+import org.infoUFPS.Exceptions.DomainException;
+
 import java.text.Normalizer;
 
 public enum TipoMateria {
@@ -27,7 +29,7 @@ public enum TipoMateria {
                 return t;
             }
         }
-        throw new IllegalArgumentException("Tipo de materia desconocido: " + text);
+        throw new DomainException("Tipo de materia desconocido: " + text);
     }
 
     private static String cleanText(String s) {

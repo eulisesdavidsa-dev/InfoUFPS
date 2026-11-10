@@ -1,6 +1,10 @@
 package org.infoUFPS.Controllers.Admin;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -21,7 +25,7 @@ import org.infoUFPS.Features.Moderacion.Queries.GetModeracionProfesoresQuery;
 import org.infoUFPS.Features.Moderacion.Queries.GetModeracionResenasQuery;
 import org.infoUFPS.Pagination.PageRequest;
 import org.infoUFPS.Pagination.PageResult;
-import org.infoUFPS.Security.AuthContext;
+import org.infoUFPS.Security.ActorContext;
 import org.infoUFPS.Services.SimilarityService;
 
 import java.util.List;
@@ -53,18 +57,18 @@ public class AdminModeracionController {
     SimilarityService similarityService;
 
     @Inject
-    AuthContext authContext;
+    ActorContext actorContext;
 
     public record CorrectAndPublishProfesorRequest(
-            String nuevoNombre,
+            @Size(max = 150) String nuevoNombre,
             String nuevaFacultad,
-            String nuevoEmail
+            @Email @Size(max = 150) String nuevoEmail
     ) {}
 
     public record CorrectAndPublishMateriaRequest(
-            String nuevoNombre,
-            String nuevoCodigo,
-            Integer nuevosCreditos,
+            @Size(max = 150) String nuevoNombre,
+            @Size(max = 30) String nuevoCodigo,
+            @Min(1) Integer nuevosCreditos,
             String nuevoTipo
     ) {}
 
@@ -77,7 +81,7 @@ public class AdminModeracionController {
             @QueryParam("page") @DefaultValue("1") Integer page,
             @QueryParam("size") @DefaultValue("10") Integer size
     ) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         EstadoModeracion estado = (estadoStr != null && !estadoStr.isBlank())
                 ? EstadoModeracion.fromString(estadoStr)
                 : EstadoModeracion.EN_REVISION;
@@ -89,8 +93,8 @@ public class AdminModeracionController {
 
     @PUT
     @Path("/profesores/{id}/publicar")
-    public Response publishProfesor(@PathParam("id") String id, CorrectAndPublishProfesorRequest request) {
-        authContext.requireAdmin();
+    public Response publishProfesor(@PathParam("id") String id, @Valid CorrectAndPublishProfesorRequest request) {
+        actorContext.currentUser().requireAdmin();
         ModerateEntityCommand command = null;
         if (request != null) {
             Facultad fac = (request.nuevaFacultad() != null && !request.nuevaFacultad().isBlank())
@@ -105,7 +109,7 @@ public class AdminModeracionController {
     @PUT
     @Path("/profesores/{id}/archivar")
     public Response archiveProfesor(@PathParam("id") String id) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         ProfesorDetailDto updated = moderateProfesorHandler.archive(id);
         return Response.ok(updated).build();
     }
@@ -113,7 +117,7 @@ public class AdminModeracionController {
     @GET
     @Path("/profesores/similares")
     public Response checkProfesorSimilarity(@QueryParam("nombre") String nombre, @QueryParam("facultad") String facultadStr) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         Facultad fac = (facultadStr != null && !facultadStr.isBlank()) ? Facultad.fromString(facultadStr) : null;
         List<ModeracionWarningDto> warnings = similarityService.checkProfesorSimilarity(nombre, fac);
         return Response.ok(warnings).build();
@@ -128,7 +132,7 @@ public class AdminModeracionController {
             @QueryParam("page") @DefaultValue("1") Integer page,
             @QueryParam("size") @DefaultValue("10") Integer size
     ) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         EstadoModeracion estado = (estadoStr != null && !estadoStr.isBlank())
                 ? EstadoModeracion.fromString(estadoStr)
                 : EstadoModeracion.EN_REVISION;
@@ -140,8 +144,8 @@ public class AdminModeracionController {
 
     @PUT
     @Path("/materias/{id}/publicar")
-    public Response publishMateria(@PathParam("id") String id, CorrectAndPublishMateriaRequest request) {
-        authContext.requireAdmin();
+    public Response publishMateria(@PathParam("id") String id, @Valid CorrectAndPublishMateriaRequest request) {
+        actorContext.currentUser().requireAdmin();
         ModerateEntityCommand command = null;
         if (request != null) {
             TipoMateria tipo = (request.nuevoTipo() != null && !request.nuevoTipo().isBlank())
@@ -163,7 +167,7 @@ public class AdminModeracionController {
     @PUT
     @Path("/materias/{id}/archivar")
     public Response archiveMateria(@PathParam("id") String id) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         MateriaDetailDto updated = moderateMateriaHandler.archive(id);
         return Response.ok(updated).build();
     }
@@ -171,7 +175,7 @@ public class AdminModeracionController {
     @GET
     @Path("/materias/similares")
     public Response checkMateriaSimilarity(@QueryParam("nombre") String nombre) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         List<ModeracionWarningDto> warnings = similarityService.checkMateriaSimilarity(nombre);
         return Response.ok(warnings).build();
     }
@@ -186,7 +190,7 @@ public class AdminModeracionController {
             @QueryParam("page") @DefaultValue("1") Integer page,
             @QueryParam("size") @DefaultValue("10") Integer size
     ) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         TipoDestino destino = (destinoStr != null && !destinoStr.isBlank())
                 ? TipoDestino.fromString(destinoStr)
                 : null;
@@ -202,7 +206,7 @@ public class AdminModeracionController {
     @PUT
     @Path("/resenas/{id}/publicar")
     public Response publishResena(@PathParam("id") String id) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         ResenaDto updated = moderateResenaHandler.publish(id);
         return Response.ok(updated).build();
     }
@@ -210,7 +214,7 @@ public class AdminModeracionController {
     @PUT
     @Path("/resenas/{id}/archivar")
     public Response archiveResena(@PathParam("id") String id) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         ResenaDto updated = moderateResenaHandler.archive(id);
         return Response.ok(updated).build();
     }

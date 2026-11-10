@@ -34,6 +34,12 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
+        <!-- Anotaciones de validación usadas en los DTOs de entrada -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+
         <!-- Pruebas unitarias de los casos de uso -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

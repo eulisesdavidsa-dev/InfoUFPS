@@ -3,7 +3,7 @@ package org.infoUFPS.Features.Profesor.Queries;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.infoUFPS.DTOs.MateriaSimpleDto;
-import org.infoUFPS.DTOs.ProfesorDetailDto;
+import org.infoUFPS.DTOs.PublicProfesorDetailDto;
 import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Entities.Profesor;
 import org.infoUFPS.Enums.EstadoModeracion;
@@ -38,7 +38,7 @@ public class GetProfesorDetailQuery {
         this.resenaRepository = resenaRepository;
     }
 
-    public ProfesorDetailDto execute(String profesorIdStr, AccountId requesterId, boolean isAdmin) {
+    public PublicProfesorDetailDto execute(String profesorIdStr, AccountId requesterId, boolean isAdmin) {
         ProfesorId profesorId = ProfesorId.of(profesorIdStr);
         Profesor profesor = profesorRepository.findById(profesorId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el profesor con ID: " + profesorIdStr));
@@ -54,9 +54,6 @@ public class GetProfesorDetailQuery {
         List<Materia> materias = materiaRepository.findByIds(profesor.getMaterias());
         List<MateriaSimpleDto> materiaDtos = materias.stream().map(MateriaSimpleDto::from).toList();
 
-        boolean showEmail = profesor.getEstado() == EstadoModeracion.PUBLICADO || isAdmin;
-
-        return ProfesorDetailDto.of(profesor, avg, total, materiaDtos, showEmail);
+        return PublicProfesorDetailDto.of(profesor, avg, total, materiaDtos);
     }
 }
-

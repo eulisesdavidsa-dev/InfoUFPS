@@ -1,6 +1,10 @@
 package org.infoUFPS.Controllers.User;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -11,7 +15,7 @@ import org.infoUFPS.Enums.Facultad;
 import org.infoUFPS.Features.Profesor.Commands.ProposeProfesorHandler;
 import org.infoUFPS.Features.Profesor.Commands.UpdateProposedProfesorHandler;
 import org.infoUFPS.Features.Profesor.Queries.GetProfesorPropuestasQuery;
-import org.infoUFPS.Security.AuthContext;
+import org.infoUFPS.Security.ActorContext;
 
 import java.util.List;
 
@@ -30,14 +34,21 @@ public class UserProfesorController {
     GetProfesorPropuestasQuery getProfesorPropuestasQuery;
 
     @Inject
-    AuthContext authContext;
+    ActorContext actorContext;
 
-    public record ProposeRequest(String nombre, String facultad, String email) {}
-    public record UpdateProposalRequest(String nombre, String facultad, String email) {}
+    public record ProposeRequest(
+            @NotBlank @Size(max = 150) String nombre,
+            String facultad,
+            @Email @Size(max = 150) String email) {}
+
+    public record UpdateProposalRequest(
+            @NotBlank @Size(max = 150) String nombre,
+            String facultad,
+            @Email @Size(max = 150) String email) {}
 
     @POST
-    public Response propose(ProposeRequest request) {
-        String userId = authContext.requireAuthenticatedUserId();
+    public Response propose(@Valid ProposeRequest request) {
+        String userId = actorContext.currentUser().requireAccountId();
         Facultad facultad = (request.facultad() != null && !request.facultad().isBlank())
                 ? Facultad.fromString(request.facultad())
                 : Facultad.NO_ESPECIFICADA;
@@ -56,15 +67,15 @@ public class UserProfesorController {
     @GET
     @Path("/propuestas")
     public Response getMyProposals() {
-        String userId = authContext.requireAuthenticatedUserId();
+        String userId = actorContext.currentUser().requireAccountId();
         List<ProfesorDetailDto> proposals = getProfesorPropuestasQuery.execute(userId);
         return Response.ok(proposals).build();
     }
 
     @PUT
     @Path("/propuestas/{id}")
-    public Response updateProposal(@PathParam("id") String id, UpdateProposalRequest request) {
-        String userId = authContext.requireAuthenticatedUserId();
+    public Response updateProposal(@PathParam("id") String id, @Valid UpdateProposalRequest request) {
+        String userId = actorContext.currentUser().requireAccountId();
         Facultad facultad = (request.facultad() != null && !request.facultad().isBlank())
                 ? Facultad.fromString(request.facultad())
                 : null;

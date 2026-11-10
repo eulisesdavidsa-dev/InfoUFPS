@@ -1,6 +1,10 @@
 package org.infoUFPS.Controllers.Admin;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -10,7 +14,7 @@ import org.infoUFPS.Enums.Facultad;
 import org.infoUFPS.Features.Profesor.Commands.AdminCreateProfesorHandler;
 import org.infoUFPS.Features.Profesor.Commands.AdminUpdateProfesorHandler;
 import org.infoUFPS.Features.Profesor.Commands.AssociateMateriasToProfesorHandler;
-import org.infoUFPS.Security.AuthContext;
+import org.infoUFPS.Security.ActorContext;
 
 import java.util.Set;
 
@@ -29,12 +33,12 @@ public class AdminProfesorController {
     AssociateMateriasToProfesorHandler associateMateriasToProfesorHandler;
 
     @Inject
-    AuthContext authContext;
+    ActorContext actorContext;
 
     public record SaveProfesorRequest(
-            String nombre,
+            @NotBlank @Size(max = 150) String nombre,
             String facultad,
-            String email,
+            @Email @Size(max = 150) String email,
             Set<String> materiasIds
     ) {}
 
@@ -43,8 +47,8 @@ public class AdminProfesorController {
     ) {}
 
     @POST
-    public Response create(SaveProfesorRequest request) {
-        authContext.requireAdmin();
+    public Response create(@Valid SaveProfesorRequest request) {
+        actorContext.currentUser().requireAdmin();
         Facultad facultad = (request.facultad() != null && !request.facultad().isBlank())
                 ? Facultad.fromString(request.facultad())
                 : Facultad.NO_ESPECIFICADA;
@@ -62,8 +66,8 @@ public class AdminProfesorController {
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, SaveProfesorRequest request) {
-        authContext.requireAdmin();
+    public Response update(@PathParam("id") String id, @Valid SaveProfesorRequest request) {
+        actorContext.currentUser().requireAdmin();
         Facultad facultad = (request.facultad() != null && !request.facultad().isBlank())
                 ? Facultad.fromString(request.facultad())
                 : null;
@@ -82,7 +86,7 @@ public class AdminProfesorController {
     @POST
     @Path("/{id}/materias")
     public Response associateMaterias(@PathParam("id") String id, AssociateMateriasRequest request) {
-        authContext.requireAdmin();
+        actorContext.currentUser().requireAdmin();
         ProfesorDetailDto updated = associateMateriasToProfesorHandler.execute(id, request.materiasIds());
         return Response.ok(updated).build();
     }

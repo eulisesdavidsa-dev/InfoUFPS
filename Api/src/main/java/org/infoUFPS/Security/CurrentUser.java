@@ -6,29 +6,21 @@ import org.infoUFPS.Exceptions.UnauthorizedException;
 /**
  * Identidad del solicitante mientras no existe login/JWT.
  * <p>
- * Punto único de aislamiento: hoy el id de cuenta y el rol llegan como parámetros
- * de la petición (cabeceras o query params). Cuando se implemente el login, solo
- * debe cambiarse la construcción de este objeto por la lectura del JWT.
+ * Punto único de aislamiento: hoy el id de cuenta llega como parámetro de la
+ * petición y el rol se resuelve en {@link ActorContext}. Cuando se implemente el
+ * login, solo debe cambiarse la construcción de este objeto por la lectura del
+ * JWT.
  *
  * @param accountId identificador de la cuenta; puede ser null si no se envió.
- * @param admin     true si el rol es administrador.
+ * @param admin     true si el rol resuelto es administrador.
  */
 public record CurrentUser(String accountId, boolean admin) {
 
     /**
-     * Construye la identidad a partir de los valores recibidos.
-     *
-     * @param accountId identificador de cuenta.
-     * @param role      rol textual.
-     * @return identidad normalizada.
+     * Identidad sin cuenta autenticada.
      */
-    public static CurrentUser from(String accountId, String role) {
-        String normalizedAccount = accountId == null || accountId.isBlank() ? null : accountId.strip();
-        boolean isAdmin = role != null
-                && (role.strip().equalsIgnoreCase("ADMIN")
-                || role.strip().equalsIgnoreCase("ROLE_ADMIN")
-                || role.strip().equalsIgnoreCase("ADMINISTRADOR"));
-        return new CurrentUser(normalizedAccount, isAdmin);
+    public static CurrentUser anonymous() {
+        return new CurrentUser(null, false);
     }
 
     /**
@@ -45,11 +37,14 @@ public record CurrentUser(String accountId, boolean admin) {
     }
 
     /**
-     * Exige el rol de administrador.
+     * Exige el rol de administrador. Primero valida que exista una cuenta para
+     * que una petición sin identidad produzca 401 y una cuenta sin permisos 403.
      *
-     * @throws ForbiddenException si el rol no es administrador.
+     * @throws UnauthorizedException si no llegó la cuenta.
+     * @throws ForbiddenException    si el rol no es administrador.
      */
     public void requireAdmin() {
+        requireAccountId();
         if (!admin) {
             throw new ForbiddenException("Se requiere rol de administrador");
         }

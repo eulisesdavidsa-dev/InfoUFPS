@@ -1,5 +1,7 @@
 package org.infoUFPS.Enums;
 
+import org.infoUFPS.Exceptions.DomainException;
+
 public enum EstadoModeracion {
     EN_REVISION {
         @Override
@@ -31,7 +33,7 @@ public enum EstadoModeracion {
                 return e;
             }
         }
-        throw new IllegalArgumentException("Estado desconocido: " + text);
+        throw new DomainException("Estado desconocido: " + text);
     }
 }
 

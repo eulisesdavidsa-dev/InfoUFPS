@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 import org.infoUFPS.DTOs.CommentDto;
 import org.infoUFPS.Entities.Comment;
 import org.infoUFPS.Entities.Content;
+import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Repositories.IAccountRepository;
 import org.infoUFPS.Repositories.ICommentRepository;
@@ -61,6 +62,10 @@ public class CreateCommentHandler {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new DomainException("El contenido especificado no existe: " + command.contentId()));
 
+        if (content.getStatus() != Status.PUBLISHED) {
+            throw new DomainException("Solo se pueden comentar contenidos publicados");
+        }
+
         if (accountRepository.findById(authorId).isEmpty()) {
             throw new DomainException("El autor especificado no existe: " + command.authorId());
         }
@@ -68,9 +73,8 @@ public class CreateCommentHandler {
         Comment comment = Comment.create(contentId, authorId, command.text());
         commentRepository.save(comment);
 
-        // Actualizar estadísticas del contenido
-        content.incrementComments();
-        contentRepository.save(content);
+        // Actualización atómica del contador para evitar condiciones de carrera
+        contentRepository.incrementCommentsCount(contentId);
 
         return CommentDto.from(comment);
     }

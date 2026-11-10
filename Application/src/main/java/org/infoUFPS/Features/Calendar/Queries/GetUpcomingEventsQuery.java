@@ -3,7 +3,7 @@ package org.infoUFPS.Features.Calendar.Queries;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.infoUFPS.Criterias.EventPageCriteria;
-import org.infoUFPS.DTOs.EventDto;
+import org.infoUFPS.DTOs.PublicEventDto;
 import org.infoUFPS.Features.Calendar.Support.EventDtoAssembler;
 import org.infoUFPS.Features.Calendar.Support.EventQueryValidator;
 import org.infoUFPS.Repositories.IEventRepository;
@@ -41,12 +41,12 @@ public class GetUpcomingEventsQuery {
      * @param size     tamaño de página.
      * @return página de eventos.
      */
-    public PagedResult<EventDto> execute(List<String> rawTypes, int page, int size) {
+    public PagedResult<PublicEventDto> execute(List<String> rawTypes, int page, int size) {
         EventPageCriteria criteria = new EventPageCriteria(
                 EventQueryValidator.parseTypes(rawTypes),
                 BogotaTime.today(),
                 PageRequest.of(page, size)
         );
-        return assembler.toPagedResult(eventRepository.findPublishedUpcomingOrOngoing(criteria));
+        return assembler.toPublicPagedResult(eventRepository.findPublishedUpcomingOrOngoing(criteria));
     }
 }

@@ -1,6 +1,7 @@
 package org.infoUFPS.Controllers.User;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -40,14 +41,16 @@ public class UserEventController {
     @Inject
     GetMyFavoriteIdsQuery myFavoriteIdsQuery;
 
+    @Inject
+    ActorContext actorContext;
+
     /**
      * Propone un evento. Entra en revisión.
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response propose(@BeanParam ActorContext actor, EventRequest request) {
-        CurrentUser user = actor.currentUser();
-        String accountId = user.requireAccountId();
+    public Response propose(@Valid EventRequest request) {
+        String accountId = actorContext.currentUser().requireAccountId();
         return Response.status(Response.Status.CREATED)
                 .entity(proposeHandler.execute(new ProposeEventCommand(accountId, request)))
                 .build();
@@ -58,10 +61,9 @@ public class UserEventController {
      */
     @GET
     @Path("/mine")
-    public Response mine(@BeanParam ActorContext actor,
-                         @QueryParam("page") String page,
+    public Response mine(@QueryParam("page") String page,
                          @QueryParam("size") String size) {
-        String accountId = actor.currentUser().requireAccountId();
+        String accountId = actorContext.currentUser().requireAccountId();
         return Response.ok(myProposalsQuery.execute(
                 accountId,
                 ApiParams.optionalInt(page, "page", 0),
@@ -74,11 +76,9 @@ public class UserEventController {
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(@BeanParam ActorContext actor,
-                           @PathParam("id") String id,
-                           EventRequest request) {
-        CurrentUser user = actor.currentUser();
-        String accountId = user.requireAccountId();
+    public Response update(@PathParam("id") String id,
+                           @Valid EventRequest request) {
+        String accountId = actorContext.currentUser().requireAccountId();
         return Response.ok(updateHandler.execute(
                 new UpdateEventCommand(id, accountId, false, request))).build();
     }
@@ -88,8 +88,8 @@ public class UserEventController {
      */
     @PUT
     @Path("/{id}/favorite")
-    public Response addFavorite(@BeanParam ActorContext actor, @PathParam("id") String id) {
-        String accountId = actor.currentUser().requireAccountId();
+    public Response addFavorite(@PathParam("id") String id) {
+        String accountId = actorContext.currentUser().requireAccountId();
         addFavoriteHandler.execute(new AddFavoriteCommand(accountId, id));
         return Response.noContent().build();
     }
@@ -99,8 +99,8 @@ public class UserEventController {
      */
     @DELETE
     @Path("/{id}/favorite")
-    public Response removeFavorite(@BeanParam ActorContext actor, @PathParam("id") String id) {
-        String accountId = actor.currentUser().requireAccountId();
+    public Response removeFavorite(@PathParam("id") String id) {
+        String accountId = actorContext.currentUser().requireAccountId();
         removeFavoriteHandler.execute(new RemoveFavoriteCommand(accountId, id));
         return Response.noContent().build();
     }
@@ -110,10 +110,9 @@ public class UserEventController {
      */
     @GET
     @Path("/favorites")
-    public Response favorites(@BeanParam ActorContext actor,
-                              @QueryParam("page") String page,
+    public Response favorites(@QueryParam("page") String page,
                               @QueryParam("size") String size) {
-        String accountId = actor.currentUser().requireAccountId();
+        String accountId = actorContext.currentUser().requireAccountId();
         return Response.ok(myFavoritesQuery.execute(
                 accountId,
                 ApiParams.optionalInt(page, "page", 0),
@@ -125,8 +124,8 @@ public class UserEventController {
      */
     @GET
     @Path("/favorites/ids")
-    public Response favoriteIds(@BeanParam ActorContext actor) {
-        String accountId = actor.currentUser().requireAccountId();
+    public Response favoriteIds() {
+        String accountId = actorContext.currentUser().requireAccountId();
         return Response.ok(myFavoriteIdsQuery.execute(accountId)).build();
     }
 }

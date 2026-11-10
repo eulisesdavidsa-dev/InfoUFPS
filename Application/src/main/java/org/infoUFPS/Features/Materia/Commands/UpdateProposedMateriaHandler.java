@@ -9,6 +9,7 @@ import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Exceptions.DuplicateResourceException;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.Exceptions.ResourceNotFoundException;
 import org.infoUFPS.Repositories.IMateriaRepository;
 import org.infoUFPS.ValueObjects.AccountId;
@@ -41,7 +42,7 @@ public class UpdateProposedMateriaHandler {
         }
 
         if (materia.getProponenteId() == null || !materia.getProponenteId().equals(editorId)) {
-            throw new DomainException("No tienes permiso para editar esta propuesta");
+            throw new ForbiddenException("No tienes permiso para editar esta propuesta");
         }
 
         if (command.codigo() != null && !command.codigo().isBlank()) {

@@ -8,9 +8,12 @@ import org.infoUFPS.Pagination.PageResult;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
 import org.infoUFPS.ValueObjects.ProfesorId;
+import org.infoUFPS.ValueObjects.RatingSummary;
 import org.infoUFPS.ValueObjects.ResenaId;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface IResenaRepository {
@@ -38,6 +41,24 @@ public interface IResenaRepository {
     Double getAverageRatingForMateria(MateriaId materiaId);
 
     long countPublishedByMateria(MateriaId materiaId);
+
+    /**
+     * Obtiene el promedio y el total de reseñas publicadas para un conjunto de
+     * profesores en una sola consulta agrupada.
+     *
+     * @param profesorIds identificadores de profesores.
+     * @return mapa indexado por el valor del identificador del profesor.
+     */
+    Map<String, RatingSummary> getRatingSummariesByProfesor(Collection<ProfesorId> profesorIds);
+
+    /**
+     * Obtiene el promedio y el total de reseñas publicadas para un conjunto de
+     * materias en una sola consulta agrupada.
+     *
+     * @param materiaIds identificadores de materias.
+     * @return mapa indexado por el valor del identificador de la materia.
+     */
+    Map<String, RatingSummary> getRatingSummariesByMateria(Collection<MateriaId> materiaIds);
 
     long countTodaySubmissionsByAutor(AccountId autorId);
 

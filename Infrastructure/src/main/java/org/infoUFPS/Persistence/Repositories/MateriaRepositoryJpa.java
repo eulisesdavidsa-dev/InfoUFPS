@@ -13,6 +13,7 @@ import org.infoUFPS.Pagination.PageRequest;
 import org.infoUFPS.Pagination.PageResult;
 import org.infoUFPS.Persistence.EntityConfigurations.MateriaJpa;
 import org.infoUFPS.Repositories.IMateriaRepository;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.Utils.TextNormalizer;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
@@ -175,7 +176,7 @@ public class MateriaRepositoryJpa implements IMateriaRepository {
 
     @Override
     public long countTodaySubmissionsByProponente(AccountId proponenteId) {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime startOfDay = BogotaTime.today().atStartOfDay();
         Long count = entityManager.createQuery(
                         "SELECT COUNT(m) FROM MateriaJpa m WHERE m.proponenteId = :propId AND m.createdAt >= :startOfDay",
                         Long.class)

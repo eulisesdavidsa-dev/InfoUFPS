@@ -2,7 +2,7 @@ package org.infoUFPS.Features.Calendar.Queries;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.infoUFPS.DTOs.EventDto;
+import org.infoUFPS.DTOs.PublicEventDto;
 import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Features.Calendar.Support.EventDtoAssembler;
 import org.infoUFPS.Repositories.IFavoriteEventRepository;
@@ -38,11 +38,11 @@ public class GetMyFavoritesQuery {
      * @param size      tamaño de página.
      * @return página de eventos favoritos ordenados por fecha del evento.
      */
-    public PagedResult<EventDto> execute(String accountId, int page, int size) {
+    public PagedResult<PublicEventDto> execute(String accountId, int page, int size) {
         if (accountId == null || accountId.isBlank()) {
             throw new DomainException("La cuenta es obligatoria");
         }
-        return assembler.toPagedResult(favoriteRepository.findPublishedFavoriteEvents(
+        return assembler.toPublicPagedResult(favoriteRepository.findPublishedFavoriteEvents(
                 AccountId.of(accountId), PageRequest.of(page, size)));
     }
 }

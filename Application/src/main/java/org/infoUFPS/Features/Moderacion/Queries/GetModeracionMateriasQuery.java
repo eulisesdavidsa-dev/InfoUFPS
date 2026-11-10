@@ -10,8 +10,11 @@ import org.infoUFPS.Pagination.PageRequest;
 import org.infoUFPS.Pagination.PageResult;
 import org.infoUFPS.Repositories.IMateriaRepository;
 import org.infoUFPS.Repositories.IResenaRepository;
+import org.infoUFPS.ValueObjects.MateriaId;
+import org.infoUFPS.ValueObjects.RatingSummary;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class GetModeracionMateriasQuery {
@@ -34,13 +37,14 @@ public class GetModeracionMateriasQuery {
         MateriaSearchCriteria criteria = new MateriaSearchCriteria(null, null, null, estado);
         PageResult<Materia> result = materiaRepository.search(criteria, pageRequest);
 
+        List<MateriaId> ids = result.items().stream().map(Materia::getId).toList();
+        Map<String, RatingSummary> summaries = resenaRepository.getRatingSummariesByMateria(ids);
+
         List<MateriaDetailDto> dtos = result.items().stream().map(m -> {
-            Double avg = resenaRepository.getAverageRatingForMateria(m.getId());
-            long total = resenaRepository.countPublishedByMateria(m.getId());
-            return MateriaDetailDto.of(m, avg, total);
+            RatingSummary summary = summaries.getOrDefault(m.getId().value(), RatingSummary.empty());
+            return MateriaDetailDto.of(m, summary.average(), summary.total());
         }).toList();
 
         return PageResult.of(dtos, result.page(), result.size(), result.totalElements());
     }
 }
-

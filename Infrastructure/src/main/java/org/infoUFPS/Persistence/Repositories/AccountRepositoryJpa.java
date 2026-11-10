@@ -8,8 +8,9 @@ import org.infoUFPS.Entities.Account;
 import org.infoUFPS.Persistence.EntityConfigurations.AccountJpa;
 import org.infoUFPS.Repositories.IAccountRepository;
 import org.infoUFPS.ValueObjects.AccountId;
-import org.infoUFPS.ValueObjects.ContentId;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -30,7 +31,7 @@ public class AccountRepositoryJpa implements IAccountRepository {
     @Override
     public Optional<Account> findByEmail(String email) {
         AccountJpa accountJpa = entityManager
-                .createQuery("SELECT a FROM AccountJpa a WHERE a.email = :email", AccountJpa.class)
+                .createQuery("SELECT a FROM AccountJpa a WHERE LOWER(a.email) = LOWER(:email)", AccountJpa.class)
                 .setParameter("email", email)
                 .getResultList().stream().findFirst().orElse(null);
 
@@ -44,7 +45,7 @@ public class AccountRepositoryJpa implements IAccountRepository {
     @Override
     public boolean existsByEmail(String email) {
         Long count = entityManager
-                .createQuery("SELECT COUNT(a) FROM AccountJpa a WHERE a.email = :email", Long.class)
+                .createQuery("SELECT COUNT(a) FROM AccountJpa a WHERE LOWER(a.email) = LOWER(:email)", Long.class)
                 .setParameter("email", email)
                 .getSingleResult();
         return count > 0;
@@ -62,6 +63,21 @@ public class AccountRepositoryJpa implements IAccountRepository {
         }
 
         return Optional.of(toDomain(accountJpa));
+    }
+
+    @Override
+    public List<Account> findByIds(Collection<AccountId> accountIds) {
+        if (accountIds == null || accountIds.isEmpty()) {
+            return List.of();
+        }
+        List<String> ids = accountIds.stream().map(AccountId::value).toList();
+        return entityManager
+                .createQuery("SELECT a FROM AccountJpa a WHERE a.accountId IN :ids", AccountJpa.class)
+                .setParameter("ids", ids)
+                .getResultList()
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override

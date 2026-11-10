@@ -3,6 +3,8 @@ package org.infoUFPS.Entities;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Enums.Facultad;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.Utils.TextNormalizer;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.Email;
@@ -44,7 +46,7 @@ public class Profesor {
         this.email = email != null && !email.isBlank() ? Email.normalize(email) : null;
         this.estado = estado != null ? estado : EstadoModeracion.EN_REVISION;
         this.proponenteId = proponenteId;
-        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.createdAt = createdAt != null ? createdAt : BogotaTime.now();
         this.updatedAt = updatedAt;
         this.materias = materias != null ? new LinkedHashSet<>(materias) : new LinkedHashSet<>();
     }
@@ -64,7 +66,7 @@ public class Profesor {
                 email,
                 EstadoModeracion.EN_REVISION,
                 proponenteId,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null,
                 new LinkedHashSet<>()
         );
@@ -82,7 +84,7 @@ public class Profesor {
                 email,
                 EstadoModeracion.PUBLICADO,
                 null,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null,
                 new LinkedHashSet<>()
         );
@@ -120,13 +122,15 @@ public class Profesor {
             throw new DomainException("Solo se pueden editar propuestas en revisión");
         }
         if (this.proponenteId == null || !this.proponenteId.equals(editorId)) {
-            throw new DomainException("No tienes permiso para editar esta propuesta");
+            throw new ForbiddenException("No tienes permiso para editar esta propuesta");
         }
         this.nombre = validateNombre(nuevoNombre);
         this.nombreNormalizado = TextNormalizer.normalizeAndSortWords(nuevoNombre);
-        this.facultad = nuevaFacultad != null ? nuevaFacultad : Facultad.NO_ESPECIFICADA;
+        this.facultad = nuevaFacultad != null
+                ? nuevaFacultad
+                : (this.facultad != null ? this.facultad : Facultad.NO_ESPECIFICADA);
         this.email = nuevoEmail != null && !nuevoEmail.isBlank() ? Email.normalize(nuevoEmail) : null;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void adminUpdate(String nuevoNombre, Facultad nuevaFacultad, String nuevoEmail) {
@@ -139,7 +143,7 @@ public class Profesor {
             this.facultad = nuevaFacultad;
         }
         this.email = nuevoEmail != null && !nuevoEmail.isBlank() ? Email.normalize(nuevoEmail) : null;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void publish() {
@@ -147,7 +151,7 @@ public class Profesor {
             throw new DomainException("No se puede publicar el profesor desde el estado actual: " + this.estado);
         }
         this.estado = EstadoModeracion.PUBLICADO;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void archive() {
@@ -155,25 +159,25 @@ public class Profesor {
             throw new DomainException("No se puede archivar el profesor desde el estado actual: " + this.estado);
         }
         this.estado = EstadoModeracion.ARCHIVADO;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void assignMateria(MateriaId materiaId) {
         Objects.requireNonNull(materiaId, "materiaId no puede ser nulo");
         this.materias.add(materiaId);
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void removeMateria(MateriaId materiaId) {
         if (materiaId != null) {
             this.materias.remove(materiaId);
-            this.updatedAt = LocalDateTime.now();
+            this.updatedAt = BogotaTime.now();
         }
     }
 
     public void setMaterias(Set<MateriaId> materias) {
         this.materias = materias != null ? new LinkedHashSet<>(materias) : new LinkedHashSet<>();
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     private static String validateNombre(String nombre) {

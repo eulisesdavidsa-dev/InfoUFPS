@@ -137,6 +137,29 @@ public class ContentRepositoryJpa implements IContentRepository {
         return count > 0;
     }
 
+    @Override
+    @Transactional
+    public void incrementCommentsCount(ContentId id) {
+        entityManager.createQuery(
+                        "UPDATE ContentJpa c " +
+                                "SET c.stats.commentsCount = c.stats.commentsCount + 1 " +
+                                "WHERE c.contentId = :id")
+                .setParameter("id", id.value())
+                .executeUpdate();
+    }
+
+    @Override
+    @Transactional
+    public void decrementCommentsCount(ContentId id) {
+        entityManager.createQuery(
+                        "UPDATE ContentJpa c " +
+                                "SET c.stats.commentsCount = CASE WHEN c.stats.commentsCount > 0 " +
+                                "THEN c.stats.commentsCount - 1 ELSE 0 END " +
+                                "WHERE c.contentId = :id")
+                .setParameter("id", id.value())
+                .executeUpdate();
+    }
+
     // ── Mapeo: Dominio → JPA Entity ──────────────────────────────────
 
     /**
@@ -181,9 +204,10 @@ public class ContentRepositoryJpa implements IContentRepository {
      * @param e La entidad de persistencia recuperada por JPA.
      * @return Instancia válida de la entidad de dominio Content.
      */
-    private Content toDomain(ContentJpa e) {
-        InteractionStats stats = (e.getStats() != null)
-                ? InteractionStats.of(e.getStats().getLikesCount(), e.getStats().getCommentsCount())
+    Content toDomain(ContentJpa e) {        InteractionStats stats = (e.getStats() != null)
+                ? InteractionStats.of(
+                        e.getStats().getLikesCount() != null ? e.getStats().getLikesCount() : 0,
+                        e.getStats().getCommentsCount() != null ? e.getStats().getCommentsCount() : 0)
                 : InteractionStats.empty();
 
         Set<String> tags = (e.getTags() != null)

@@ -1,5 +1,7 @@
 package org.infoUFPS.Features.Account.Commands;
 
+import org.infoUFPS.Exceptions.DomainException;
+
 public record RegisterAccountCommand(
         String email,
         String password,
@@ -7,11 +9,11 @@ public record RegisterAccountCommand(
 ) {
     public RegisterAccountCommand {
         if (email == null || email.isBlank())
-            throw new IllegalArgumentException("El email es obligatorio");
+            throw new DomainException("El email es obligatorio");
         if (password == null || password.length() < 8)
-            throw new IllegalArgumentException("La contraseña debe tener al menos 8 caracteres");
+            throw new DomainException("La contraseña debe tener al menos 8 caracteres");
         if (name == null || name.isBlank())
-            throw new IllegalArgumentException("El nombre es obligatorio");
+            throw new DomainException("El nombre es obligatorio");
     }
     
 }

@@ -4,13 +4,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import org.infoUFPS.Exceptions.ResourceNotFoundException;
+import org.infoUFPS.Exceptions.NotFoundException;
 
+/**
+ * Traduce recursos inexistentes a HTTP 404.
+ */
 @Provider
-public class ResourceNotFoundExceptionMapper implements ExceptionMapper<ResourceNotFoundException> {
+public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
 
     @Override
-    public Response toResponse(ResourceNotFoundException exception) {
+    public Response toResponse(NotFoundException exception) {
         ErrorResponse body = ErrorResponse.of("NOT_FOUND", exception.getMessage(), 404);
         return Response.status(Response.Status.NOT_FOUND)
                 .type(MediaType.APPLICATION_JSON)
@@ -18,4 +21,3 @@ public class ResourceNotFoundExceptionMapper implements ExceptionMapper<Resource
                 .build();
     }
 }
-
