@@ -1,6 +1,7 @@
 package org.infoUFPS.Entities;
 
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.CommentId;
 import org.infoUFPS.ValueObjects.ContentId;
@@ -72,7 +73,7 @@ public class Comment {
                 contentId,
                 authorId,
                 text,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null
         );
     }
@@ -96,7 +97,7 @@ public class Comment {
      */
     public void updateText(String newText) {
         this.text = validateAndSanitizeText(newText);
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     /**

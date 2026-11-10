@@ -9,7 +9,9 @@ import org.infoUFPS.DTOs.Requests.AdminSaveProfesorCommand;
 import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Entities.Profesor;
 import org.infoUFPS.Enums.EstadoModeracion;
+import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Exceptions.DuplicateResourceException;
+import org.infoUFPS.Exceptions.NotFoundException;
 import org.infoUFPS.Repositories.IMateriaRepository;
 import org.infoUFPS.Repositories.IProfesorRepository;
 import org.infoUFPS.Utils.TextNormalizer;
@@ -53,14 +55,38 @@ public class AdminCreateProfesorHandler {
         List<MateriaSimpleDto> materiaDtos = new ArrayList<>();
         if (command.materiasIds() != null && !command.materiasIds().isEmpty()) {
             Set<MateriaId> matIds = command.materiasIds().stream().map(MateriaId::of).collect(Collectors.toSet());
+            List<Materia> materias = validateMaterias(matIds);
             profesor.setMaterias(matIds);
-            List<Materia> materias = materiaRepository.findByIds(matIds);
             materiaDtos = materias.stream().map(MateriaSimpleDto::from).toList();
         }
 
         profesorRepository.save(profesor);
 
         return ProfesorDetailDto.of(profesor, null, 0L, materiaDtos, true);
+    }
+
+    private List<Materia> validateMaterias(Set<MateriaId> matIds) {
+        List<Materia> materias = materiaRepository.findByIds(matIds);
+        Set<String> encontradas = materias.stream()
+                .map(materia -> materia.getId().value())
+                .collect(Collectors.toSet());
+        List<String> inexistentes = matIds.stream()
+                .map(MateriaId::value)
+                .filter(id -> !encontradas.contains(id))
+                .sorted()
+                .toList();
+        if (!inexistentes.isEmpty()) {
+            throw new NotFoundException("No se encontraron las materias: " + String.join(", ", inexistentes));
+        }
+        List<String> noPublicadas = materias.stream()
+                .filter(materia -> materia.getEstado() != EstadoModeracion.PUBLICADO)
+                .map(materia -> materia.getId().value())
+                .sorted()
+                .toList();
+        if (!noPublicadas.isEmpty()) {
+            throw new DomainException("Las siguientes materias no están publicadas: " + String.join(", ", noPublicadas));
+        }
+        return materias;
     }
 }
 

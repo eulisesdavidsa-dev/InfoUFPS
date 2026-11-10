@@ -1,5 +1,7 @@
 package org.infoUFPS.Enums;
 
+import org.infoUFPS.Exceptions.DomainException;
+
 import java.text.Normalizer;
 
 public enum Facultad {
@@ -31,7 +33,7 @@ public enum Facultad {
                 return f;
             }
         }
-        throw new IllegalArgumentException("Facultad desconocida: " + text);
+        throw new DomainException("Facultad desconocida: " + text);
     }
 
     private static String cleanText(String s) {

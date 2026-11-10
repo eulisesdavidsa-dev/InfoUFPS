@@ -1,10 +1,10 @@
-package org.infoUFPS.Api.Exceptions;
+package org.infoUFPS.ExceptionMappers;
 
 import jakarta.ws.rs.core.MediaType;
-import org.infoUFPS.Exceptions.UnauthorizedException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.infoUFPS.Exceptions.UnauthorizedException;
 
 /**
  * Traduce la falta de autenticación a HTTP 401.
@@ -14,9 +14,10 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
 
     @Override
     public Response toResponse(UnauthorizedException exception) {
+        ErrorResponse body = ErrorResponse.of("UNAUTHORIZED", exception.getMessage(), 401);
         return Response.status(Response.Status.UNAUTHORIZED)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ApiError("UNAUTHORIZED", exception.getMessage()))
+                .entity(body)
                 .build();
     }
 }

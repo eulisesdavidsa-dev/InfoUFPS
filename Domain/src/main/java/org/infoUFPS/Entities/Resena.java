@@ -3,6 +3,8 @@ package org.infoUFPS.Entities;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Enums.TipoDestino;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
 import org.infoUFPS.ValueObjects.ProfesorId;
@@ -46,7 +48,7 @@ public class Resena {
         this.comentario = validateComentario(comentario);
         this.materiaCursada = (materiaCursada != null && !materiaCursada.isBlank()) ? materiaCursada.strip() : null;
         this.estado = estado != null ? estado : EstadoModeracion.EN_REVISION;
-        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.createdAt = createdAt != null ? createdAt : BogotaTime.now();
         this.updatedAt = updatedAt;
 
         if (tipoDestino == TipoDestino.PROFESOR) {
@@ -84,7 +86,7 @@ public class Resena {
                 comentario,
                 materiaCursada,
                 EstadoModeracion.EN_REVISION,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null
         );
     }
@@ -106,7 +108,7 @@ public class Resena {
                 comentario,
                 null,
                 EstadoModeracion.EN_REVISION,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null
         );
     }
@@ -147,7 +149,7 @@ public class Resena {
      */
     public void updateByAuthor(int nuevaCalificacion, String nuevoComentario, String nuevaMateriaCursada, AccountId editorId) {
         if (!this.autorId.equals(editorId)) {
-            throw new DomainException("Solo el autor puede editar su reseña");
+            throw new ForbiddenException("Solo el autor puede editar su reseña");
         }
         if (this.estado == EstadoModeracion.ARCHIVADO) {
             throw new DomainException("No se puede editar una reseña archivada");
@@ -159,7 +161,7 @@ public class Resena {
                     ? nuevaMateriaCursada.strip()
                     : null;
         }
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void publish() {
@@ -167,7 +169,7 @@ public class Resena {
             throw new DomainException("No se puede publicar la reseña desde el estado actual: " + this.estado);
         }
         this.estado = EstadoModeracion.PUBLICADO;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void archive() {
@@ -175,7 +177,7 @@ public class Resena {
             throw new DomainException("No se puede archivar la reseña desde el estado actual: " + this.estado);
         }
         this.estado = EstadoModeracion.ARCHIVADO;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     private static String validateComentario(String comentario) {

@@ -1,6 +1,7 @@
 package org.infoUFPS.Controllers.Admin;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -32,14 +33,16 @@ public class AdminEventController {
     @Inject
     GetModerationQueueQuery moderationQuery;
 
+    @Inject
+    ActorContext actorContext;
+
     /**
      * Crea un evento publicado. Solo administradores.
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response create(@BeanParam ActorContext actor, EventRequest request) {
-        CurrentUser user = requireAdmin(actor);
-        String accountId = user.requireAccountId();
+    public Response create(@Valid EventRequest request) {
+        String accountId = requireAdmin().requireAccountId();
         return Response.status(Response.Status.CREATED)
                 .entity(createHandler.execute(new CreateEventCommand(request), accountId))
                 .build();
@@ -51,11 +54,9 @@ public class AdminEventController {
     @PUT
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response update(@BeanParam ActorContext actor,
-                           @PathParam("id") String id,
-                           EventRequest request) {
-        CurrentUser user = requireAdmin(actor);
-        String accountId = user.requireAccountId();
+    public Response update(@PathParam("id") String id,
+                           @Valid EventRequest request) {
+        String accountId = requireAdmin().requireAccountId();
         return Response.ok(updateHandler.execute(
                 new UpdateEventCommand(id, accountId, true, request))).build();
     }
@@ -64,11 +65,10 @@ public class AdminEventController {
      * Cola de moderación por estado.
      */
     @GET
-    public Response queue(@BeanParam ActorContext actor,
-                          @QueryParam("status") String status,
+    public Response queue(@QueryParam("status") String status,
                           @QueryParam("page") String page,
                           @QueryParam("size") String size) {
-        requireAdmin(actor);
+        requireAdmin();
         return Response.ok(moderationQuery.execute(
                 status,
                 ApiParams.optionalInt(page, "page", 0),
@@ -80,8 +80,8 @@ public class AdminEventController {
      */
     @POST
     @Path("/{id}/publish")
-    public Response publish(@BeanParam ActorContext actor, @PathParam("id") String id) {
-        requireAdmin(actor);
+    public Response publish(@PathParam("id") String id) {
+        requireAdmin();
         return Response.ok(publishHandler.execute(new PublishEventCommand(id))).build();
     }
 
@@ -90,13 +90,13 @@ public class AdminEventController {
      */
     @POST
     @Path("/{id}/archive")
-    public Response archive(@BeanParam ActorContext actor, @PathParam("id") String id) {
-        requireAdmin(actor);
+    public Response archive(@PathParam("id") String id) {
+        requireAdmin();
         return Response.ok(archiveHandler.execute(new ArchiveEventCommand(id))).build();
     }
 
-    private CurrentUser requireAdmin(ActorContext actor) {
-        CurrentUser user = actor.currentUser();
+    private CurrentUser requireAdmin() {
+        CurrentUser user = actorContext.currentUser();
         user.requireAdmin();
         return user;
     }

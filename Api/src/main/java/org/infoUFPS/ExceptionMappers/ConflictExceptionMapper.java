@@ -1,10 +1,10 @@
-package org.infoUFPS.Api.Exceptions;
+package org.infoUFPS.ExceptionMappers;
 
 import jakarta.ws.rs.core.MediaType;
-import org.infoUFPS.Exceptions.ConflictException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.infoUFPS.Exceptions.ConflictException;
 
 /**
  * Traduce conflictos de negocio a HTTP 409.
@@ -14,9 +14,10 @@ public class ConflictExceptionMapper implements ExceptionMapper<ConflictExceptio
 
     @Override
     public Response toResponse(ConflictException exception) {
+        ErrorResponse body = ErrorResponse.of("CONFLICT", exception.getMessage(), 409);
         return Response.status(Response.Status.CONFLICT)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ApiError("CONFLICT", exception.getMessage()))
+                .entity(body)
                 .build();
     }
 }

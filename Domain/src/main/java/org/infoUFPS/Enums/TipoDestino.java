@@ -1,5 +1,7 @@
 package org.infoUFPS.Enums;
 
+import org.infoUFPS.Exceptions.DomainException;
+
 public enum TipoDestino {
     PROFESOR,
     MATERIA;
@@ -13,7 +15,7 @@ public enum TipoDestino {
                 return t;
             }
         }
-        throw new IllegalArgumentException("Tipo de destino desconocido: " + text);
+        throw new DomainException("Tipo de destino desconocido: " + text);
     }
 }
 

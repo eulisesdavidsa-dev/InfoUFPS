@@ -2,6 +2,7 @@ package org.infoUFPS.Entities;
 
 import org.infoUFPS.Enums.Role;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.ValueObjects.AccountId;
 
 import java.time.LocalDateTime;
@@ -22,7 +23,7 @@ public class Account {
         this.email = Objects.requireNonNull(email, "email es obligatorio");
         this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash es obligatorio");
         this.role = role != null ? role : Role.USER;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = BogotaTime.now();
     }
 
     public static Account register(String email, String passwordHash, String name) {

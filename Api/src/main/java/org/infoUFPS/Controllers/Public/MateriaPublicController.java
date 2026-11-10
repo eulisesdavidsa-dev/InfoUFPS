@@ -4,16 +4,17 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.infoUFPS.DTOs.MateriaDetailDto;
-import org.infoUFPS.DTOs.MateriaListItemDto;
-import org.infoUFPS.DTOs.ResenaDto;
+import org.infoUFPS.DTOs.PublicMateriaDetailDto;
+import org.infoUFPS.DTOs.PublicMateriaListItemDto;
+import org.infoUFPS.DTOs.PublicResenaDto;
 import org.infoUFPS.Enums.TipoMateria;
 import org.infoUFPS.Features.Materia.Queries.GetMateriaDetailQuery;
 import org.infoUFPS.Features.Materia.Queries.GetMateriasPublicQuery;
 import org.infoUFPS.Features.Resena.Queries.GetResenasByDestinoQuery;
 import org.infoUFPS.Pagination.PageRequest;
 import org.infoUFPS.Pagination.PageResult;
-import org.infoUFPS.Security.AuthContext;
+import org.infoUFPS.Security.ActorContext;
+import org.infoUFPS.Security.CurrentUser;
 import org.infoUFPS.ValueObjects.AccountId;
 
 @Path("/api/v1/public/materias")
@@ -31,7 +32,7 @@ public class MateriaPublicController {
     GetResenasByDestinoQuery getResenasByDestinoQuery;
 
     @Inject
-    AuthContext authContext;
+    ActorContext actorContext;
 
     @GET
     public Response list(
@@ -47,16 +48,17 @@ public class MateriaPublicController {
         }
 
         PageRequest pageRequest = PageRequest.of(page, size);
-        PageResult<MateriaListItemDto> result = getMateriasPublicQuery.execute(query, creditos, tipo, pageRequest);
+        PageResult<PublicMateriaListItemDto> result = getMateriasPublicQuery.execute(query, creditos, tipo, pageRequest);
         return Response.ok(result).build();
     }
 
     @GET
     @Path("/{id}")
     public Response getDetail(@PathParam("id") String id) {
-        AccountId requesterId = authContext.getUserId().map(AccountId::of).orElse(null);
-        boolean isAdmin = authContext.isAdmin();
-        MateriaDetailDto detail = getMateriaDetailQuery.execute(id, requesterId, isAdmin);
+        CurrentUser user = actorContext.currentUser();
+        AccountId requesterId = user.accountId() != null ? AccountId.of(user.accountId()) : null;
+        boolean isAdmin = user.admin();
+        PublicMateriaDetailDto detail = getMateriaDetailQuery.execute(id, requesterId, isAdmin);
         return Response.ok(detail).build();
     }
 
@@ -68,7 +70,7 @@ public class MateriaPublicController {
             @QueryParam("size") @DefaultValue("10") Integer size
     ) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        PageResult<ResenaDto> result = getResenasByDestinoQuery.getByMateria(id, pageRequest);
+        PageResult<PublicResenaDto> result = getResenasByDestinoQuery.getByMateria(id, pageRequest);
         return Response.ok(result).build();
     }
 }

@@ -4,7 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.infoUFPS.Entities.Resena;
-import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Enums.EstadoModeracion;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.Exceptions.ResourceNotFoundException;
 import org.infoUFPS.Repositories.IResenaRepository;
 import org.infoUFPS.ValueObjects.AccountId;
@@ -32,7 +33,12 @@ public class DeleteResenaHandler {
 
         AccountId requesterId = AccountId.of(requesterIdStr);
         if (!isAdmin && !resena.getAutorId().equals(requesterId)) {
-            throw new DomainException("No tienes permiso para eliminar esta reseña");
+            throw new ForbiddenException("No tienes permiso para eliminar esta reseña");
+        }
+
+        // Operación idempotente: si ya está archivada no hay nada que hacer.
+        if (resena.getEstado() == EstadoModeracion.ARCHIVADO) {
+            return;
         }
 
         resena.archive();

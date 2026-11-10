@@ -3,7 +3,7 @@ package org.infoUFPS.Features.Calendar.Queries;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.infoUFPS.Criterias.EventRangeCriteria;
-import org.infoUFPS.DTOs.EventDto;
+import org.infoUFPS.DTOs.PublicEventDto;
 import org.infoUFPS.Features.Calendar.Support.EventDtoAssembler;
 import org.infoUFPS.Features.Calendar.Support.EventQueryValidator;
 import org.infoUFPS.Repositories.IEventRepository;
@@ -39,8 +39,8 @@ public class GetEventsQuery {
      * @param rawTypes tipos a filtrar.
      * @return eventos publicados ordenados para presentación.
      */
-    public List<EventDto> execute(LocalDate from, LocalDate to, List<String> rawTypes) {
+    public List<PublicEventDto> execute(LocalDate from, LocalDate to, List<String> rawTypes) {
         EventRangeCriteria criteria = EventQueryValidator.validateRange(from, to, rawTypes);
-        return assembler.toDtos(eventRepository.findPublishedOverlapping(criteria));
+        return assembler.toPublicDtos(eventRepository.findPublishedOverlapping(criteria));
     }
 }

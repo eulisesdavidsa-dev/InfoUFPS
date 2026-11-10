@@ -1,6 +1,11 @@
 package org.infoUFPS.Controllers.User;
 
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -12,7 +17,8 @@ import org.infoUFPS.Features.Resena.Commands.CreateResenaHandler;
 import org.infoUFPS.Features.Resena.Commands.DeleteResenaHandler;
 import org.infoUFPS.Features.Resena.Commands.UpdateResenaHandler;
 import org.infoUFPS.Features.Resena.Queries.GetUserResenasQuery;
-import org.infoUFPS.Security.AuthContext;
+import org.infoUFPS.Security.ActorContext;
+import org.infoUFPS.Security.CurrentUser;
 
 import java.util.List;
 
@@ -34,26 +40,26 @@ public class UserResenaController {
     GetUserResenasQuery getUserResenasQuery;
 
     @Inject
-    AuthContext authContext;
+    ActorContext actorContext;
 
     public record CreateReviewRequest(
-            String tipoDestino,
+            @NotBlank String tipoDestino,
             String profesorId,
             String materiaId,
-            int calificacion,
-            String comentario,
-            String materiaCursada
+            @Min(1) @Max(5) int calificacion,
+            @NotBlank @Size(max = 1000) String comentario,
+            @Size(max = 150) String materiaCursada
     ) {}
 
     public record UpdateReviewRequest(
-            int calificacion,
-            String comentario,
-            String materiaCursada
+            @Min(1) @Max(5) int calificacion,
+            @NotBlank @Size(max = 1000) String comentario,
+            @Size(max = 150) String materiaCursada
     ) {}
 
     @POST
-    public Response create(CreateReviewRequest request) {
-        String userId = authContext.requireAuthenticatedUserId();
+    public Response create(@Valid CreateReviewRequest request) {
+        String userId = actorContext.currentUser().requireAccountId();
         TipoDestino destino = (request.tipoDestino() != null)
                 ? TipoDestino.fromString(request.tipoDestino())
                 : null;
@@ -74,15 +80,15 @@ public class UserResenaController {
 
     @GET
     public Response getMyReviews() {
-        String userId = authContext.requireAuthenticatedUserId();
+        String userId = actorContext.currentUser().requireAccountId();
         List<ResenaDto> list = getUserResenasQuery.execute(userId);
         return Response.ok(list).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, UpdateReviewRequest request) {
-        String userId = authContext.requireAuthenticatedUserId();
+    public Response update(@PathParam("id") String id, @Valid UpdateReviewRequest request) {
+        String userId = actorContext.currentUser().requireAccountId();
         UpdateResenaCommand command = new UpdateResenaCommand(
                 id,
                 userId,
@@ -98,8 +104,9 @@ public class UserResenaController {
     @DELETE
     @Path("/{id}")
     public Response delete(@PathParam("id") String id) {
-        String userId = authContext.requireAuthenticatedUserId();
-        boolean isAdmin = authContext.isAdmin();
+        CurrentUser user = actorContext.currentUser();
+        String userId = user.requireAccountId();
+        boolean isAdmin = user.admin();
         deleteResenaHandler.execute(id, userId, isAdmin);
         return Response.noContent().build();
     }

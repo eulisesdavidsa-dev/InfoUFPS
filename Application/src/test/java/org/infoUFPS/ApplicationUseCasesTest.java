@@ -17,12 +17,17 @@ import org.infoUFPS.Enums.Role;
 import org.infoUFPS.Enums.TipoDestino;
 import org.infoUFPS.Enums.TipoMateria;
 import org.infoUFPS.Exceptions.DailyLimitExceededException;
+import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Exceptions.DuplicateResourceException;
+import org.infoUFPS.Exceptions.NotFoundException;
 import org.infoUFPS.Features.Materia.Commands.AdminCreateMateriaHandler;
 import org.infoUFPS.Features.Materia.Commands.ProposeMateriaHandler;
 import org.infoUFPS.Features.Moderacion.Commands.ModerateProfesorHandler;
 import org.infoUFPS.Features.Profesor.Commands.AdminCreateProfesorHandler;
+import org.infoUFPS.Features.Profesor.Commands.AdminUpdateProfesorHandler;
+import org.infoUFPS.Features.Profesor.Commands.AssociateMateriasToProfesorHandler;
 import org.infoUFPS.Features.Profesor.Commands.ProposeProfesorHandler;
+import org.infoUFPS.Features.Profesor.Commands.UpdateProposedProfesorHandler;
 import org.infoUFPS.Features.Resena.Commands.CreateResenaHandler;
 import org.infoUFPS.Features.Resena.Commands.DeleteResenaHandler;
 import org.infoUFPS.Pagination.PageRequest;
@@ -33,10 +38,12 @@ import org.infoUFPS.Repositories.IProfesorRepository;
 import org.infoUFPS.Repositories.IResenaRepository;
 import org.infoUFPS.Services.DailyLimitService;
 import org.infoUFPS.Services.SimilarityService;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.Utils.TextNormalizer;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
 import org.infoUFPS.ValueObjects.ProfesorId;
+import org.infoUFPS.ValueObjects.RatingSummary;
 import org.infoUFPS.ValueObjects.ResenaId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -216,6 +223,136 @@ class ApplicationUseCasesTest {
         assertEquals(EstadoModeracion.PUBLICADO, published.estado());
     }
 
+    @Test
+    @DisplayName("Moderación: publicar sin correcciones valida nombre duplicado contra publicados")
+    void testPublishWithoutCorrectionsRejectsDuplicateName() {
+        adminCreateProfesorHandler.execute(new AdminSaveProfesorCommand("Carlos Andrés Pérez", Facultad.INGENIERIA, null, Set.of()));
+
+        Profesor proposal = Profesor.propose("Perez Carlos Andres", Facultad.INGENIERIA, null, testUser.getAccountId());
+        profesorRepo.save(proposal);
+
+        assertThrows(DuplicateResourceException.class,
+                () -> moderateProfesorHandler.publish(proposal.getId().value(), null));
+    }
+
+    @Test
+    @DisplayName("Moderación: publicar sin correcciones valida email duplicado excluyendo el propio")
+    void testPublishWithoutCorrectionsRejectsDuplicateEmail() {
+        adminCreateProfesorHandler.execute(new AdminSaveProfesorCommand("Profesor Existente", Facultad.INGENIERIA, "ocupado@ufps.edu.co", Set.of()));
+
+        Profesor proposal = Profesor.propose("Otro Profesor", Facultad.CIENCIAS_BASICAS, "ocupado@ufps.edu.co", testUser.getAccountId());
+        profesorRepo.save(proposal);
+
+        assertThrows(DuplicateResourceException.class,
+                () -> moderateProfesorHandler.publish(proposal.getId().value(), null));
+    }
+
+    @Test
+    @DisplayName("Moderación: publicar sin correcciones permite datos únicos")
+    void testPublishWithoutCorrectionsSucceedsWhenUnique() {
+        Profesor proposal = Profesor.propose("Profesor Único", Facultad.CIENCIAS_BASICAS, "unico@ufps.edu.co", testUser.getAccountId());
+        profesorRepo.save(proposal);
+
+        ProfesorDetailDto published = moderateProfesorHandler.publish(proposal.getId().value(), null);
+
+        assertEquals(EstadoModeracion.PUBLICADO, published.estado());
+        assertEquals("Profesor Único", published.nombre());
+    }
+
+    @Test
+    @DisplayName("Editar propuesta sin facultad conserva la facultad actual al validar duplicados")
+    void testUpdateProposalUsesCurrentFacultyForDuplicateValidation() {
+        adminCreateProfesorHandler.execute(new AdminSaveProfesorCommand("Profesor Base", Facultad.NO_ESPECIFICADA, null, Set.of()));
+        ProfesorDetailDto propuesta = proposeProfesorHandler.execute(
+                new ProposeProfesorCommand("Profesor Otro", Facultad.INGENIERIA, null, testUser.getAccountId().value()));
+
+        UpdateProposedProfesorHandler updateHandler = new UpdateProposedProfesorHandler(profesorRepo);
+        ProfesorDetailDto updated = updateHandler.execute(new UpdateProposedProfesorCommand(
+                propuesta.id(), "Profesor Base", null, null, testUser.getAccountId().value()));
+
+        assertEquals("Profesor Base", updated.nombre());
+        assertEquals(Facultad.INGENIERIA, updated.facultad(),
+                "Debe conservar la facultad actual y no comparar contra NO_ESPECIFICADA");
+    }
+
+    @Test
+    @DisplayName("Editar como admin sin facultad conserva la facultad actual al validar duplicados")
+    void testAdminUpdateUsesCurrentFacultyForDuplicateValidation() {
+        adminCreateProfesorHandler.execute(new AdminSaveProfesorCommand("Profesor Base", Facultad.NO_ESPECIFICADA, null, Set.of()));
+        ProfesorDetailDto otro = adminCreateProfesorHandler.execute(
+                new AdminSaveProfesorCommand("Profesor Otro", Facultad.INGENIERIA, null, Set.of()));
+
+        AdminUpdateProfesorHandler updateHandler = new AdminUpdateProfesorHandler(profesorRepo, materiaRepo, resenaRepo);
+        ProfesorDetailDto updated = updateHandler.execute(
+                otro.id(), new AdminSaveProfesorCommand("Profesor Base", null, null, null));
+
+        assertEquals("Profesor Base", updated.nombre());
+        assertEquals(Facultad.INGENIERIA, updated.facultad(),
+                "Debe conservar la facultad actual y no comparar contra NO_ESPECIFICADA");
+    }
+
+    @Test
+    @DisplayName("Crear profesor rechaza materias inexistentes")
+    void testAdminCreateProfesorRejectsUnknownMaterias() {
+        assertThrows(NotFoundException.class, () -> adminCreateProfesorHandler.execute(
+                new AdminSaveProfesorCommand("Profesor Materias", Facultad.INGENIERIA, null, Set.of("no-existe"))));
+    }
+
+    @Test
+    @DisplayName("Crear profesor rechaza materias no publicadas")
+    void testAdminCreateProfesorRejectsUnpublishedMaterias() {
+        Materia propuesta = Materia.propose("Materia En Revisión", "9999999", 3, TipoMateria.CARRERA, testUser.getAccountId());
+        materiaRepo.save(propuesta);
+
+        assertThrows(DomainException.class, () -> adminCreateProfesorHandler.execute(
+                new AdminSaveProfesorCommand("Profesor Materias", Facultad.INGENIERIA, null, Set.of(propuesta.getId().value()))));
+    }
+
+    @Test
+    @DisplayName("Actualizar profesor rechaza materias inexistentes y no publicadas")
+    void testAdminUpdateProfesorRejectsInvalidMaterias() {
+        ProfesorDetailDto profesor = adminCreateProfesorHandler.execute(
+                new AdminSaveProfesorCommand("Profesor Update", Facultad.INGENIERIA, null, Set.of()));
+        Materia propuesta = Materia.propose("Materia En Revisión", "9999998", 3, TipoMateria.CARRERA, testUser.getAccountId());
+        materiaRepo.save(propuesta);
+        AdminUpdateProfesorHandler updateHandler = new AdminUpdateProfesorHandler(profesorRepo, materiaRepo, resenaRepo);
+
+        assertThrows(NotFoundException.class, () -> updateHandler.execute(profesor.id(),
+                new AdminSaveProfesorCommand("Profesor Update", Facultad.INGENIERIA, null, Set.of("no-existe"))));
+        assertThrows(DomainException.class, () -> updateHandler.execute(profesor.id(),
+                new AdminSaveProfesorCommand("Profesor Update", Facultad.INGENIERIA, null, Set.of(propuesta.getId().value()))));
+    }
+
+    @Test
+    @DisplayName("Asociar materias rechaza materias inexistentes y no publicadas")
+    void testAssociateMateriasRejectsInvalidMaterias() {
+        ProfesorDetailDto profesor = adminCreateProfesorHandler.execute(
+                new AdminSaveProfesorCommand("Profesor Asociado", Facultad.INGENIERIA, null, Set.of()));
+        Materia propuesta = Materia.propose("Materia En Revisión", "9999997", 3, TipoMateria.CARRERA, testUser.getAccountId());
+        materiaRepo.save(propuesta);
+        AssociateMateriasToProfesorHandler associateHandler =
+                new AssociateMateriasToProfesorHandler(profesorRepo, materiaRepo, resenaRepo);
+
+        assertThrows(NotFoundException.class,
+                () -> associateHandler.execute(profesor.id(), Set.of("no-existe")));
+        assertThrows(DomainException.class,
+                () -> associateHandler.execute(profesor.id(), Set.of(propuesta.getId().value())));
+    }
+
+    @Test
+    @DisplayName("Eliminar una reseña ya archivada es idempotente")
+    void testDeleteResenaIsIdempotent() {
+        ProfesorDetailDto profesor = adminCreateProfesorHandler.execute(
+                new AdminSaveProfesorCommand("Profesor Reseña", Facultad.INGENIERIA, null, Set.of()));
+        Resena resena = Resena.createForProfesor(testUser.getAccountId(), ProfesorId.of(profesor.id()), 5, "Buena", null);
+        resena.archive();
+        resenaRepo.save(resena);
+
+        assertDoesNotThrow(() -> deleteResenaHandler.execute(
+                resena.getId().value(), testUser.getAccountId().value(), false));
+        assertEquals(EstadoModeracion.ARCHIVADO, resenaRepo.findById(resena.getId()).orElseThrow().getEstado());
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     // Repositorios en memoria para pruebas rápidas y deterministas
     // ─────────────────────────────────────────────────────────────────────
@@ -261,7 +398,7 @@ class ApplicationUseCasesTest {
         @Override
         public long countTodaySubmissionsByProponente(AccountId pid) {
             return db.values().stream()
-                    .filter(p -> pid.equals(p.getProponenteId()) && p.getCreatedAt().toLocalDate().isEqual(LocalDate.now()))
+                    .filter(p -> pid.equals(p.getProponenteId()) && p.getCreatedAt().toLocalDate().isEqual(BogotaTime.today()))
                     .count();
         }
         @Override public void deleteById(ProfesorId id) { db.remove(id.value()); }
@@ -307,7 +444,7 @@ class ApplicationUseCasesTest {
         @Override
         public long countTodaySubmissionsByProponente(AccountId pid) {
             return db.values().stream()
-                    .filter(m -> pid.equals(m.getProponenteId()) && m.getCreatedAt().toLocalDate().isEqual(LocalDate.now()))
+                    .filter(m -> pid.equals(m.getProponenteId()) && m.getCreatedAt().toLocalDate().isEqual(BogotaTime.today()))
                     .count();
         }
         @Override
@@ -391,9 +528,41 @@ class ApplicationUseCasesTest {
                     .count();
         }
         @Override
+        public Map<String, RatingSummary> getRatingSummariesByProfesor(Collection<ProfesorId> ids) {
+            Map<String, RatingSummary> summaries = new HashMap<>();
+            for (ProfesorId pid : ids) {
+                List<Integer> ratings = db.values().stream()
+                        .filter(r -> pid.equals(r.getProfesorId()) && r.getEstado() == EstadoModeracion.PUBLICADO)
+                        .map(Resena::getCalificacion)
+                        .toList();
+                if (!ratings.isEmpty()) {
+                    summaries.put(pid.value(), new RatingSummary(
+                            ratings.stream().mapToInt(Integer::intValue).average().orElse(0.0),
+                            ratings.size()));
+                }
+            }
+            return summaries;
+        }
+        @Override
+        public Map<String, RatingSummary> getRatingSummariesByMateria(Collection<MateriaId> ids) {
+            Map<String, RatingSummary> summaries = new HashMap<>();
+            for (MateriaId mid : ids) {
+                List<Integer> ratings = db.values().stream()
+                        .filter(r -> mid.equals(r.getMateriaId()) && r.getEstado() == EstadoModeracion.PUBLICADO)
+                        .map(Resena::getCalificacion)
+                        .toList();
+                if (!ratings.isEmpty()) {
+                    summaries.put(mid.value(), new RatingSummary(
+                            ratings.stream().mapToInt(Integer::intValue).average().orElse(0.0),
+                            ratings.size()));
+                }
+            }
+            return summaries;
+        }
+        @Override
         public long countTodaySubmissionsByAutor(AccountId aid) {
             return db.values().stream()
-                    .filter(r -> aid.equals(r.getAutorId()) && r.getCreatedAt().toLocalDate().isEqual(LocalDate.now()))
+                    .filter(r -> aid.equals(r.getAutorId()) && r.getCreatedAt().toLocalDate().isEqual(BogotaTime.today()))
                     .count();
         }
         @Override public void deleteById(ResenaId id) { db.remove(id.value()); }
@@ -411,6 +580,13 @@ class ApplicationUseCasesTest {
         @Override
         public boolean existsByEmail(String email) {
             return db.values().stream().anyMatch(a -> a.getEmail().equalsIgnoreCase(email));
+        }
+        @Override
+        public List<Account> findByIds(Collection<AccountId> ids) {
+            return ids.stream()
+                    .map(id -> db.get(id.value()))
+                    .filter(Objects::nonNull)
+                    .toList();
         }
         @Override public void deleteById(AccountId id) { db.remove(id.value()); }
     }

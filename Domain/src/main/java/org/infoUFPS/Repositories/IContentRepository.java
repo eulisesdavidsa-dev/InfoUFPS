@@ -74,4 +74,18 @@ public interface IContentRepository {
      */
     boolean existsById(ContentId id);
 
+    /**
+     * Incrementa atómicamente el contador de comentarios del contenido.
+     *
+     * @param id El ContentId del contenido a actualizar.
+     */
+    void incrementCommentsCount(ContentId id);
+
+    /**
+     * Decrementa atómicamente el contador de comentarios del contenido sin bajar de cero.
+     *
+     * @param id El ContentId del contenido a actualizar.
+     */
+    void decrementCommentsCount(ContentId id);
+
 }

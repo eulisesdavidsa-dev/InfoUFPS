@@ -12,14 +12,19 @@ import org.infoUFPS.Pagination.PageRequest;
 import org.infoUFPS.Pagination.PageResult;
 import org.infoUFPS.Persistence.EntityConfigurations.ResenaJpa;
 import org.infoUFPS.Repositories.IResenaRepository;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
 import org.infoUFPS.ValueObjects.ProfesorId;
+import org.infoUFPS.ValueObjects.RatingSummary;
 import org.infoUFPS.ValueObjects.ResenaId;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -221,8 +226,56 @@ public class ResenaRepositoryJpa implements IResenaRepository {
     }
 
     @Override
+    public Map<String, RatingSummary> getRatingSummariesByProfesor(Collection<ProfesorId> profesorIds) {
+        if (profesorIds == null || profesorIds.isEmpty()) {
+            return Map.of();
+        }
+        List<String> ids = profesorIds.stream().map(ProfesorId::value).toList();
+        List<Object[]> rows = entityManager.createQuery(
+                        "SELECT r.profesorId, AVG(r.calificacion), COUNT(r) FROM ResenaJpa r " +
+                                "WHERE r.profesorId IN :ids AND r.estado = :pub " +
+                                "GROUP BY r.profesorId",
+                        Object[].class)
+                .setParameter("ids", ids)
+                .setParameter("pub", EstadoModeracion.PUBLICADO)
+                .getResultList();
+
+        Map<String, RatingSummary> summaries = new HashMap<>();
+        for (Object[] row : rows) {
+            summaries.put(
+                    (String) row[0],
+                    new RatingSummary(((Number) row[1]).doubleValue(), ((Number) row[2]).longValue()));
+        }
+        return summaries;
+    }
+
+    @Override
+    public Map<String, RatingSummary> getRatingSummariesByMateria(Collection<MateriaId> materiaIds) {
+        if (materiaIds == null || materiaIds.isEmpty()) {
+            return Map.of();
+        }
+        List<String> ids = materiaIds.stream().map(MateriaId::value).toList();
+        List<Object[]> rows = entityManager.createQuery(
+                        "SELECT r.materiaId, AVG(r.calificacion), COUNT(r) FROM ResenaJpa r " +
+                                "WHERE r.materiaId IN :ids AND r.estado = :pub " +
+                                "GROUP BY r.materiaId",
+                        Object[].class)
+                .setParameter("ids", ids)
+                .setParameter("pub", EstadoModeracion.PUBLICADO)
+                .getResultList();
+
+        Map<String, RatingSummary> summaries = new HashMap<>();
+        for (Object[] row : rows) {
+            summaries.put(
+                    (String) row[0],
+                    new RatingSummary(((Number) row[1]).doubleValue(), ((Number) row[2]).longValue()));
+        }
+        return summaries;
+    }
+
+    @Override
     public long countTodaySubmissionsByAutor(AccountId autorId) {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime startOfDay = BogotaTime.today().atStartOfDay();
         Long count = entityManager.createQuery(
                         "SELECT COUNT(r) FROM ResenaJpa r WHERE r.autorId = :autorId AND r.createdAt >= :startOfDay",
                         Long.class)

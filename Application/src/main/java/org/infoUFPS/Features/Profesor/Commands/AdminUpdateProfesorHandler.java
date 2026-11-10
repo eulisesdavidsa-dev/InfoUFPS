@@ -9,7 +9,10 @@ import org.infoUFPS.DTOs.Requests.AdminSaveProfesorCommand;
 import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Entities.Profesor;
 import org.infoUFPS.Enums.EstadoModeracion;
+import org.infoUFPS.Enums.Facultad;
+import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Exceptions.DuplicateResourceException;
+import org.infoUFPS.Exceptions.NotFoundException;
 import org.infoUFPS.Exceptions.ResourceNotFoundException;
 import org.infoUFPS.Repositories.IMateriaRepository;
 import org.infoUFPS.Repositories.IProfesorRepository;
@@ -52,33 +55,64 @@ public class AdminUpdateProfesorHandler {
         Profesor profesor = profesorRepository.findById(profesorId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el profesor con ID: " + id));
 
+        Facultad facultadEfectiva = command.facultad() != null
+                ? command.facultad()
+                : (profesor.getFacultad() != null ? profesor.getFacultad() : Facultad.NO_ESPECIFICADA);
+
         String emailNorm = Email.normalize(command.email());
         if (emailNorm != null && profesorRepository.existsByEmailAndNotId(emailNorm, profesorId)) {
             throw new DuplicateResourceException("Ya existe un profesor registrado con el email: " + emailNorm);
         }
 
         String normName = TextNormalizer.normalizeAndSortWords(command.nombre());
-        if (!normName.equals(profesor.getNombreNormalizado()) || command.facultad() != profesor.getFacultad()) {
-            if (profesorRepository.existsByNombreNormalizadoAndFacultadAndEstado(normName, command.facultad(), EstadoModeracion.PUBLICADO)) {
+        if (!normName.equals(profesor.getNombreNormalizado()) || facultadEfectiva != profesor.getFacultad()) {
+            if (profesorRepository.existsByNombreNormalizadoAndFacultadAndEstado(normName, facultadEfectiva, EstadoModeracion.PUBLICADO)) {
                 throw new DuplicateResourceException("Ya existe un profesor publicado con este nombre en la facultad seleccionada");
             }
         }
 
         profesor.adminUpdate(command.nombre(), command.facultad(), emailNorm);
 
+        List<Materia> materias;
         if (command.materiasIds() != null) {
             Set<MateriaId> matIds = command.materiasIds().stream().map(MateriaId::of).collect(Collectors.toSet());
+            materias = validateMaterias(matIds);
             profesor.setMaterias(matIds);
+        } else {
+            materias = materiaRepository.findByIds(profesor.getMaterias());
         }
 
         profesorRepository.save(profesor);
 
         Double avg = resenaRepository.getAverageRatingForProfesor(profesorId);
         long count = resenaRepository.countPublishedByProfesor(profesorId);
-        List<Materia> materias = materiaRepository.findByIds(profesor.getMaterias());
         List<MateriaSimpleDto> materiaDtos = materias.stream().map(MateriaSimpleDto::from).toList();
 
         return ProfesorDetailDto.of(profesor, avg, count, materiaDtos, true);
+    }
+
+    private List<Materia> validateMaterias(Set<MateriaId> matIds) {
+        List<Materia> materias = materiaRepository.findByIds(matIds);
+        Set<String> encontradas = materias.stream()
+                .map(materia -> materia.getId().value())
+                .collect(Collectors.toSet());
+        List<String> inexistentes = matIds.stream()
+                .map(MateriaId::value)
+                .filter(id -> !encontradas.contains(id))
+                .sorted()
+                .toList();
+        if (!inexistentes.isEmpty()) {
+            throw new NotFoundException("No se encontraron las materias: " + String.join(", ", inexistentes));
+        }
+        List<String> noPublicadas = materias.stream()
+                .filter(materia -> materia.getEstado() != EstadoModeracion.PUBLICADO)
+                .map(materia -> materia.getId().value())
+                .sorted()
+                .toList();
+        if (!noPublicadas.isEmpty()) {
+            throw new DomainException("Las siguientes materias no están publicadas: " + String.join(", ", noPublicadas));
+        }
+        return materias;
     }
 }
 

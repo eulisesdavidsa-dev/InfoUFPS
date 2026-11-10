@@ -7,7 +7,7 @@ import org.infoUFPS.DTOs.Requests.UpdateResenaCommand;
 import org.infoUFPS.DTOs.ResenaDto;
 import org.infoUFPS.Entities.Account;
 import org.infoUFPS.Entities.Resena;
-import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.Exceptions.ResourceNotFoundException;
 import org.infoUFPS.Repositories.IAccountRepository;
 import org.infoUFPS.Repositories.IResenaRepository;
@@ -40,7 +40,7 @@ public class UpdateResenaHandler {
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la reseña con ID: " + command.resenaId()));
 
         if (!resena.getAutorId().equals(autorId)) {
-            throw new DomainException("Solo el autor puede editar su reseña");
+            throw new ForbiddenException("Solo el autor puede editar su reseña");
         }
 
         resena.updateByAuthor(command.calificacion(), command.comentario(), command.materiaCursada(), autorId);

@@ -2,7 +2,7 @@ package org.infoUFPS.Features.Materia.Queries;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.infoUFPS.DTOs.MateriaDetailDto;
+import org.infoUFPS.DTOs.PublicMateriaDetailDto;
 import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Exceptions.ResourceNotFoundException;
@@ -28,7 +28,7 @@ public class GetMateriaDetailQuery {
         this.resenaRepository = resenaRepository;
     }
 
-    public MateriaDetailDto execute(String materiaIdStr, AccountId requesterId, boolean isAdmin) {
+    public PublicMateriaDetailDto execute(String materiaIdStr, AccountId requesterId, boolean isAdmin) {
         MateriaId materiaId = MateriaId.of(materiaIdStr);
         Materia materia = materiaRepository.findById(materiaId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la materia con ID: " + materiaIdStr));
@@ -42,7 +42,6 @@ public class GetMateriaDetailQuery {
         Double avg = resenaRepository.getAverageRatingForMateria(materiaId);
         long total = resenaRepository.countPublishedByMateria(materiaId);
 
-        return MateriaDetailDto.of(materia, avg, total);
+        return PublicMateriaDetailDto.of(materia, avg, total);
     }
 }
-

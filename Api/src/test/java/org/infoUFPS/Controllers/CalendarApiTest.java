@@ -2,9 +2,17 @@ package org.infoUFPS.Controllers;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
+import org.infoUFPS.Entities.Account;
+import org.infoUFPS.Enums.Role;
+import org.infoUFPS.Repositories.IAccountRepository;
+import org.infoUFPS.Utils.BogotaTime;
+import org.infoUFPS.ValueObjects.AccountId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -20,8 +28,30 @@ import static org.hamcrest.Matchers.notNullValue;
 class CalendarApiTest {
 
     private static final String ADMIN_ID = "admin-api-test";
-    private static final String ADMIN_ROLE = "ADMIN";
     private static final String USER_ID = "user-api-test";
+
+    @Inject
+    IAccountRepository accountRepository;
+
+    @BeforeEach
+    void seedAccounts() {
+        seedAccount(ADMIN_ID, "admin-api-test@ufps.edu.co", "Admin API Test", Role.ADMIN);
+        seedAccount(USER_ID, "user-api-test@ufps.edu.co", "User API Test", Role.USER);
+    }
+
+    private void seedAccount(String id, String email, String name, Role role) {
+        if (accountRepository.existsByEmail(email)) {
+            return;
+        }
+        accountRepository.save(Account.of(
+                AccountId.of(id),
+                name,
+                email,
+                "hash",
+                role,
+                BogotaTime.now()
+        ));
+    }
 
     private static String uniqueTitle(String prefix) {
         return prefix + " " + UUID.randomUUID();
@@ -44,7 +74,6 @@ class CalendarApiTest {
     private String createPublishedEvent(String title, String date, String startTime) {
         return given()
                 .header("X-Account-Id", ADMIN_ID)
-                .header("X-Account-Role", ADMIN_ROLE)
                 .contentType(ContentType.JSON)
                 .body(timedEvent(title, date, startTime))
                 .when()
@@ -149,7 +178,6 @@ class CalendarApiTest {
 
         given()
                 .header("X-Account-Id", ADMIN_ID)
-                .header("X-Account-Role", ADMIN_ROLE)
                 .contentType(ContentType.JSON)
                 .body(timedEvent(title, "2030-02-10", "08:00"))
                 .when().post("/api/v1/admin/events")
@@ -184,7 +212,6 @@ class CalendarApiTest {
 
         given()
                 .header("X-Account-Id", ADMIN_ID)
-                .header("X-Account-Role", ADMIN_ROLE)
                 .queryParam("status", "UNDER_REVIEW")
                 .queryParam("size", "100")
                 .when().get("/api/v1/admin/events")

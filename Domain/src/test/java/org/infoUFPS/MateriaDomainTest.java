@@ -4,6 +4,7 @@ import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Enums.TipoMateria;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,20 @@ class MateriaDomainTest {
         assertEquals(EstadoModeracion.ARCHIVADO, m.getEstado());
 
         assertThrows(DomainException.class, m::publish);
+    }
+
+    @Test
+    @DisplayName("Solo el proponente puede editar su propuesta de materia")
+    void testOnlyProponentCanEditProposal() {
+        AccountId proponente = AccountId.generate();
+        AccountId intruso = AccountId.generate();
+        Materia m = Materia.propose("Física Mecánica", "1150201", 3, TipoMateria.CARRERA, proponente);
+
+        assertThrows(ForbiddenException.class, () ->
+                m.updateProposal("Otro Nombre", "1150202", 4, TipoMateria.CARRERA, intruso));
+
+        m.updateProposal("Física Mecánica II", "1150202", 4, TipoMateria.CARRERA, proponente);
+        assertEquals("Física Mecánica II", m.getNombre());
     }
 }
 

@@ -10,8 +10,11 @@ import org.infoUFPS.Pagination.PageRequest;
 import org.infoUFPS.Pagination.PageResult;
 import org.infoUFPS.Repositories.IProfesorRepository;
 import org.infoUFPS.Repositories.IResenaRepository;
+import org.infoUFPS.ValueObjects.ProfesorId;
+import org.infoUFPS.ValueObjects.RatingSummary;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class GetModeracionProfesoresQuery {
@@ -34,13 +37,14 @@ public class GetModeracionProfesoresQuery {
         ProfesorSearchCriteria criteria = new ProfesorSearchCriteria(null, null, estado);
         PageResult<Profesor> result = profesorRepository.search(criteria, pageRequest);
 
+        List<ProfesorId> ids = result.items().stream().map(Profesor::getId).toList();
+        Map<String, RatingSummary> summaries = resenaRepository.getRatingSummariesByProfesor(ids);
+
         List<ProfesorDetailDto> dtos = result.items().stream().map(p -> {
-            Double avg = resenaRepository.getAverageRatingForProfesor(p.getId());
-            long total = resenaRepository.countPublishedByProfesor(p.getId());
-            return ProfesorDetailDto.of(p, avg, total, List.of(), true);
+            RatingSummary summary = summaries.getOrDefault(p.getId().value(), RatingSummary.empty());
+            return ProfesorDetailDto.of(p, summary.average(), summary.total(), List.of(), true);
         }).toList();
 
         return PageResult.of(dtos, result.page(), result.size(), result.totalElements());
     }
 }
-

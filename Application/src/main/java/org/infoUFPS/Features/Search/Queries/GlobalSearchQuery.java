@@ -5,9 +5,9 @@ import jakarta.inject.Inject;
 import org.infoUFPS.Criterias.MateriaSearchCriteria;
 import org.infoUFPS.Criterias.ProfesorSearchCriteria;
 import org.infoUFPS.DTOs.GlobalSearchResultDto;
-import org.infoUFPS.DTOs.MateriaListItemDto;
 import org.infoUFPS.DTOs.ModuleItemDto;
-import org.infoUFPS.DTOs.ProfesorListItemDto;
+import org.infoUFPS.DTOs.PublicMateriaListItemDto;
+import org.infoUFPS.DTOs.PublicProfesorListItemDto;
 import org.infoUFPS.Entities.Content;
 import org.infoUFPS.Entities.Materia;
 import org.infoUFPS.Entities.Profesor;
@@ -18,8 +18,12 @@ import org.infoUFPS.Repositories.IMateriaRepository;
 import org.infoUFPS.Repositories.IProfesorRepository;
 import org.infoUFPS.Repositories.IResenaRepository;
 import org.infoUFPS.Utils.TextNormalizer;
+import org.infoUFPS.ValueObjects.MateriaId;
+import org.infoUFPS.ValueObjects.ProfesorId;
+import org.infoUFPS.ValueObjects.RatingSummary;
 
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class GlobalSearchQuery {
@@ -63,34 +67,35 @@ public class GlobalSearchQuery {
         }
 
         // 2. Profesores publicados
-        List<ProfesorListItemDto> profesores = List.of();
+        List<PublicProfesorListItemDto> profesores = List.of();
         if (profesorRepository != null) {
             PageResult<Profesor> profResult = profesorRepository.search(
                     ProfesorSearchCriteria.publicSearch(cleanQuery, null),
                     PageRequest.of(1, 10)
             );
+            List<ProfesorId> ids = profResult.items().stream().map(Profesor::getId).toList();
+            Map<String, RatingSummary> summaries = resenaRepository.getRatingSummariesByProfesor(ids);
             profesores = profResult.items().stream().map(p -> {
-                Double avg = resenaRepository.getAverageRatingForProfesor(p.getId());
-                long total = resenaRepository.countPublishedByProfesor(p.getId());
-                return ProfesorListItemDto.of(p, avg, total, true);
+                RatingSummary summary = summaries.getOrDefault(p.getId().value(), RatingSummary.empty());
+                return PublicProfesorListItemDto.of(p, summary.average(), summary.total());
             }).toList();
         }
 
         // 3. Materias publicadas
-        List<MateriaListItemDto> materias = List.of();
+        List<PublicMateriaListItemDto> materias = List.of();
         if (materiaRepository != null) {
             PageResult<Materia> matResult = materiaRepository.search(
                     MateriaSearchCriteria.publicSearch(cleanQuery, null, null),
                     PageRequest.of(1, 10)
             );
+            List<MateriaId> ids = matResult.items().stream().map(Materia::getId).toList();
+            Map<String, RatingSummary> summaries = resenaRepository.getRatingSummariesByMateria(ids);
             materias = matResult.items().stream().map(m -> {
-                Double avg = resenaRepository.getAverageRatingForMateria(m.getId());
-                long total = resenaRepository.countPublishedByMateria(m.getId());
-                return MateriaListItemDto.of(m, avg, total);
+                RatingSummary summary = summaries.getOrDefault(m.getId().value(), RatingSummary.empty());
+                return PublicMateriaListItemDto.of(m, summary.average(), summary.total());
             }).toList();
         }
 
         return new GlobalSearchResultDto(cleanQuery, contenidos, profesores, materias);
     }
 }
-

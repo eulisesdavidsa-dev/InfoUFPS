@@ -7,8 +7,10 @@ import org.infoUFPS.DTOs.ProfesorDetailDto;
 import org.infoUFPS.DTOs.Requests.UpdateProposedProfesorCommand;
 import org.infoUFPS.Entities.Profesor;
 import org.infoUFPS.Enums.EstadoModeracion;
+import org.infoUFPS.Enums.Facultad;
 import org.infoUFPS.Exceptions.DomainException;
 import org.infoUFPS.Exceptions.DuplicateResourceException;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.Exceptions.ResourceNotFoundException;
 import org.infoUFPS.Repositories.IProfesorRepository;
 import org.infoUFPS.Utils.TextNormalizer;
@@ -45,8 +47,12 @@ public class UpdateProposedProfesorHandler {
         }
 
         if (profesor.getProponenteId() == null || !profesor.getProponenteId().equals(editorId)) {
-            throw new DomainException("No tienes permiso para editar esta propuesta");
+            throw new ForbiddenException("No tienes permiso para editar esta propuesta");
         }
+
+        Facultad facultadEfectiva = command.facultad() != null
+                ? command.facultad()
+                : (profesor.getFacultad() != null ? profesor.getFacultad() : Facultad.NO_ESPECIFICADA);
 
         String emailNorm = Email.normalize(command.email());
         if (emailNorm != null && profesorRepository.existsByEmailAndNotId(emailNorm, profesorId)) {
@@ -54,8 +60,8 @@ public class UpdateProposedProfesorHandler {
         }
 
         String normName = TextNormalizer.normalizeAndSortWords(command.nombre());
-        if (!normName.equals(profesor.getNombreNormalizado()) || command.facultad() != profesor.getFacultad()) {
-            if (profesorRepository.existsByNombreNormalizadoAndFacultadAndEstado(normName, command.facultad(), EstadoModeracion.PUBLICADO)) {
+        if (!normName.equals(profesor.getNombreNormalizado()) || facultadEfectiva != profesor.getFacultad()) {
+            if (profesorRepository.existsByNombreNormalizadoAndFacultadAndEstado(normName, facultadEfectiva, EstadoModeracion.PUBLICADO)) {
                 throw new DuplicateResourceException("Ya existe un profesor publicado con este nombre en la facultad seleccionada");
             }
         }
@@ -66,4 +72,3 @@ public class UpdateProposedProfesorHandler {
         return ProfesorDetailDto.of(profesor, null, 0L, List.of(), false);
     }
 }
-

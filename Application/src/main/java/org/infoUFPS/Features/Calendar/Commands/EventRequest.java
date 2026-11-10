@@ -1,5 +1,8 @@
 package org.infoUFPS.Features.Calendar.Commands;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.infoUFPS.Enums.EventType;
 import org.infoUFPS.ValueObjects.EventSchedule;
 
@@ -11,15 +14,15 @@ import java.time.LocalTime;
  * Los valores se validan en la entidad de dominio y en el objeto de valor de programación.
  */
 public record EventRequest(
-        String title,
+        @NotBlank @Size(max = 150) String title,
         String type,
-        String location,
-        LocalDate startDate,
+        @Size(max = 255) String location,
+        @NotNull LocalDate startDate,
         LocalDate endDate,
         LocalTime startTime,
         LocalTime endTime,
-        String description,
-        String infoUrl
+        @Size(max = 4000) String description,
+        @Size(max = 512) String infoUrl
 ) {
 
     /**

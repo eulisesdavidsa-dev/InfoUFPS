@@ -15,11 +15,11 @@ import org.infoUFPS.ValueObjects.InteractionStats;
 public class InteractionStatsJpa {
 
     /** Mapeo relacional para la columna que almacena el total de likes de la tarjeta. */
-    @Column(name = "likes_count")
+    @Column(name = "likes_count", nullable = false)
     private Integer likesCount;
 
     /** Mapeo relacional para la columna que almacena el total de comentarios de la tarjeta. */
-    @Column(name = "comments_count")
+    @Column(name = "comments_count", nullable = false)
     private Integer commentsCount;
 
     /**

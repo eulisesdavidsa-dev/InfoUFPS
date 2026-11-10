@@ -15,6 +15,7 @@ import org.infoUFPS.Pagination.PageResult;
 import org.infoUFPS.Persistence.EntityConfigurations.MateriaJpa;
 import org.infoUFPS.Persistence.EntityConfigurations.ProfesorJpa;
 import org.infoUFPS.Repositories.IProfesorRepository;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.Utils.TextNormalizer;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
@@ -72,7 +73,7 @@ public class ProfesorRepositoryJpa implements IProfesorRepository {
         query.setFirstResult(pageRequest.getOffset());
         query.setMaxResults(pageRequest.size());
 
-        List<Profesor> items = query.getResultList().stream().map(this::toDomain).toList();
+        List<Profesor> items = query.getResultList().stream().map(this::toDomainSummary).toList();
 
         return PageResult.of(items, pageRequest.page(), pageRequest.size(), totalElements);
     }
@@ -147,7 +148,7 @@ public class ProfesorRepositoryJpa implements IProfesorRepository {
         if (facultad != null && facultad != Facultad.NO_ESPECIFICADA) {
             q.setParameter("facultad", facultad);
         }
-        return q.getResultList().stream().map(this::toDomain).toList();
+        return q.getResultList().stream().map(this::toDomainSummary).toList();
     }
 
     @Override
@@ -158,13 +159,13 @@ public class ProfesorRepositoryJpa implements IProfesorRepository {
                 .setParameter("propId", proponenteId.value())
                 .getResultList()
                 .stream()
-                .map(this::toDomain)
+                .map(this::toDomainSummary)
                 .toList();
     }
 
     @Override
     public long countTodaySubmissionsByProponente(AccountId proponenteId) {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime startOfDay = BogotaTime.today().atStartOfDay();
         Long count = entityManager.createQuery(
                         "SELECT COUNT(p) FROM ProfesorJpa p WHERE p.proponenteId = :propId AND p.createdAt >= :startOfDay",
                         Long.class)
@@ -215,6 +216,19 @@ public class ProfesorRepositoryJpa implements IProfesorRepository {
             jpa.getMaterias().forEach(m -> materiasIds.add(MateriaId.of(m.getMateriaId())));
         }
 
+        return toDomain(jpa, materiasIds);
+    }
+
+    /**
+     * Mapea un profesor sin tocar la colección LAZY de materias. Se usa en
+     * listados y búsquedas donde las materias no forman parte del DTO, evitando
+     * una consulta adicional por cada fila.
+     */
+    private Profesor toDomainSummary(ProfesorJpa jpa) {
+        return toDomain(jpa, Set.of());
+    }
+
+    private Profesor toDomain(ProfesorJpa jpa, Set<MateriaId> materiasIds) {
         return Profesor.of(
                 ProfesorId.of(jpa.getProfesorId()),
                 jpa.getNombre(),

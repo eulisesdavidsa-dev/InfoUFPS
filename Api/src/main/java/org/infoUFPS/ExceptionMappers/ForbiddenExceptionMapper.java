@@ -1,10 +1,10 @@
-package org.infoUFPS.Api.Exceptions;
+package org.infoUFPS.ExceptionMappers;
 
 import jakarta.ws.rs.core.MediaType;
-import org.infoUFPS.Exceptions.ForbiddenException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.infoUFPS.Exceptions.ForbiddenException;
 
 /**
  * Traduce la falta de permisos a HTTP 403.
@@ -14,9 +14,10 @@ public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenExcept
 
     @Override
     public Response toResponse(ForbiddenException exception) {
+        ErrorResponse body = ErrorResponse.of("FORBIDDEN", exception.getMessage(), 403);
         return Response.status(Response.Status.FORBIDDEN)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ApiError("FORBIDDEN", exception.getMessage()))
+                .entity(body)
                 .build();
     }
 }

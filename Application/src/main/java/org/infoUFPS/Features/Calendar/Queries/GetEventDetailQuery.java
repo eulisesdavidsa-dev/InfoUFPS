@@ -2,7 +2,7 @@ package org.infoUFPS.Features.Calendar.Queries;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.infoUFPS.DTOs.EventDto;
+import org.infoUFPS.DTOs.PublicEventDto;
 import org.infoUFPS.Entities.Event;
 import org.infoUFPS.Enums.Status;
 import org.infoUFPS.Exceptions.DomainException;
@@ -37,7 +37,7 @@ public class GetEventDetailQuery {
      * @param eventId identificador del evento.
      * @return detalle del evento.
      */
-    public EventDto execute(String eventId) {
+    public PublicEventDto execute(String eventId) {
         if (eventId == null || eventId.isBlank()) {
             throw new DomainException("El identificador del evento es obligatorio");
         }
@@ -46,6 +46,6 @@ public class GetEventDetailQuery {
         if (event.getStatus() != Status.PUBLISHED) {
             throw new NotFoundException("Evento no encontrado: " + eventId);
         }
-        return assembler.toDto(event);
+        return assembler.toPublicDto(event);
     }
 }

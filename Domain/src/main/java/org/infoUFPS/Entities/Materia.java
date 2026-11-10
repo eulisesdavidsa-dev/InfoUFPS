@@ -3,6 +3,8 @@ package org.infoUFPS.Entities;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Enums.TipoMateria;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
+import org.infoUFPS.Utils.BogotaTime;
 import org.infoUFPS.Utils.TextNormalizer;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
@@ -43,7 +45,7 @@ public class Materia {
         this.tipo = tipo;
         this.estado = estado != null ? estado : EstadoModeracion.EN_REVISION;
         this.proponenteId = proponenteId;
-        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.createdAt = createdAt != null ? createdAt : BogotaTime.now();
         this.updatedAt = updatedAt;
     }
 
@@ -64,7 +66,7 @@ public class Materia {
                 tipo,
                 EstadoModeracion.EN_REVISION,
                 proponenteId,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null
         );
     }
@@ -82,7 +84,7 @@ public class Materia {
                 tipo,
                 EstadoModeracion.PUBLICADO,
                 null,
-                LocalDateTime.now(),
+                BogotaTime.now(),
                 null
         );
     }
@@ -119,14 +121,14 @@ public class Materia {
             throw new DomainException("Solo se pueden editar propuestas en revisión");
         }
         if (this.proponenteId == null || !this.proponenteId.equals(editorId)) {
-            throw new DomainException("No tienes permiso para editar esta propuesta");
+            throw new ForbiddenException("No tienes permiso para editar esta propuesta");
         }
         this.nombre = validateNombre(nuevoNombre);
         this.nombreNormalizado = TextNormalizer.normalizeAndSortWords(nuevoNombre);
         this.codigo = validateAndNormalizeCodigo(nuevoCodigo);
         this.creditos = validateCreditos(nuevosCreditos);
         this.tipo = nuevoTipo;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void adminUpdate(String nuevoNombre, String nuevoCodigo, Integer nuevosCreditos, TipoMateria nuevoTipo) {
@@ -140,7 +142,7 @@ public class Materia {
         if (nuevoTipo != null) {
             this.tipo = nuevoTipo;
         }
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void publish() {
@@ -148,7 +150,7 @@ public class Materia {
             throw new DomainException("No se puede publicar la materia desde el estado actual: " + this.estado);
         }
         this.estado = EstadoModeracion.PUBLICADO;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     public void archive() {
@@ -156,7 +158,7 @@ public class Materia {
             throw new DomainException("No se puede archivar la materia desde el estado actual: " + this.estado);
         }
         this.estado = EstadoModeracion.ARCHIVADO;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = BogotaTime.now();
     }
 
     private static String validateNombre(String nombre) {

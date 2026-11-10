@@ -1,5 +1,7 @@
--- Módulo Calendario InfoUFPS
+-- =====================================================================
+-- Migración V2: Módulo Calendario InfoUFPS
 -- Zona horaria de negocio: America/Bogota (fechas y horas locales).
+-- =====================================================================
 
 CREATE TABLE IF NOT EXISTS events (
     event_id         VARCHAR(36)  NOT NULL,

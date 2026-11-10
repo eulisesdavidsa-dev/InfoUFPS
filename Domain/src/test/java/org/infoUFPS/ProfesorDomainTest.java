@@ -4,6 +4,7 @@ import org.infoUFPS.Entities.Profesor;
 import org.infoUFPS.Enums.EstadoModeracion;
 import org.infoUFPS.Enums.Facultad;
 import org.infoUFPS.Exceptions.DomainException;
+import org.infoUFPS.Exceptions.ForbiddenException;
 import org.infoUFPS.ValueObjects.AccountId;
 import org.infoUFPS.ValueObjects.MateriaId;
 import org.junit.jupiter.api.DisplayName;
@@ -61,7 +62,7 @@ class ProfesorDomainTest {
         Profesor p = Profesor.propose("Profesor Original", Facultad.CIENCIAS_DE_LA_SALUD, null, autor);
 
         // Intruso no puede editar
-        assertThrows(DomainException.class, () ->
+        assertThrows(ForbiddenException.class, () ->
                 p.updateProposal("Nuevo Nombre", Facultad.INGENIERIA, null, intruso)
         );
 
